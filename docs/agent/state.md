@@ -6,30 +6,30 @@
 
 ## Legutóbbi állapot
 
-**Elkészült iteráció:** OUT-04
+**Elkészült iteráció:** OUT-05
 
 **Dátum:** 2026-03-19
 
 **Elvégzett munka:**
-- `backend/src/services/transcript.js` – `parseVtt`, `downloadTranscript`, `getStoredTranscript`
-  - VTT feldolgozás: időbélyegek, HTML tagek, duplikátumok eltávolítása
-  - Letöltés: `yt-dlp --write-auto-sub --sub-lang en --skip-download`
-  - Ha nincs felirat: graceful null visszaadás (nem crashel)
-  - Feliratok mentése: `data/transcripts/[videoId].txt`
-- `backend/src/db/videoRepository.js` – `updateTranscriptStatus` hozzáadva
-- `backend/src/api/videos.js` – `transcriptAvailable` mező hozzáadva a top10 válaszhoz
-- `tests/unit/transcript.test.js` – 12 unit teszt a `parseVtt` függvényre
-- `tests/e2e/home.spec.js` – `/api/top10` transcriptAvailable smoke teszt
-- Teszteredmény: 48/48 unit teszt + 4/4 e2e teszt zöld
+- `backend/src/services/translation.js` – `translateText`, `translateVideo`
+  - `@vitalets/google-translate-api` (ingyenes, API kulcs nélkül)
+  - Fallback: hiba esetén az eredeti angol szöveg marad
+  - Idempotens: ha `title_hu` már létezik, nem fordít újra
+  - Rate limiting: 500ms delay hívások között
+- `backend/src/db/videoRepository.js` – `updateTranslations` hozzáadva
+- `backend/src/api/videos.js` – `titleHu` mező hozzáadva a top10 válaszhoz
+- `backend/jest.config.cjs` – `moduleDirectories` bővítve (`backend/node_modules`)
+- `tests/unit/translation.test.js` – 11 unit teszt (fallback, idempotencia, null kezelés)
+- `tests/e2e/home.spec.js` – `titleHu` mező smoke teszt
+- Teszteredmény: 59/59 unit teszt + 4/4 e2e teszt zöld
 
 **Technikai döntések:**
-- VTT → txt konverzió: a `.replace(/\s+/g, ' ')` normalizálja a whitespace-t (ez helyes viselkedés)
-- `downloadTranscript` az output template alapján a `[id].en.vtt` fájlt keresi
-- VTT fájlt törlés után csak a .txt marad (disk takarékosság)
+- `jest.config.cjs` `moduleDirectories` bővítve: a `@vitalets/google-translate-api` `backend/node_modules`-ban van, de a tesztek a projekt gyökeréből futnak
+- `translateVideo` `jest.unstable_mockModule`-lal mock-olható (ESM async mock)
 
 **Ami nem készült el:** –
 
-**Következő javasolt iteráció:** OUT-05
+**Következő javasolt iteráció:** OUT-06
 
 ---
 

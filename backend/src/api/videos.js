@@ -22,6 +22,7 @@ router.get('/top10', (req, res, next) => {
     const top10 = getTop10(videos).map((v) => ({
       ...v,
       transcriptAvailable: Boolean(v.has_transcript),
+      titleHu: v.title_hu || null,
     }));
     res.json(top10);
   } catch (err) {

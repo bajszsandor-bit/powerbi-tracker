@@ -101,4 +101,23 @@ function updateTranscriptStatus(videoId, hasTranscript) {
   ).run({ hasTranscript: hasTranscript ? 1 : 0, id: videoId });
 }
 
-export { upsertVideos, getAllVideos, getVideoCount, updateTranscriptStatus };
+/**
+ * Elmenti egy videó magyar fordításait az adatbázisba.
+ *
+ * @param {string} videoId - YouTube videó azonosító
+ * @param {{ titleHu: string|null, descriptionHu: string|null, transcriptHu: string|null }} translations
+ * @returns {void}
+ */
+function updateTranslations(videoId, { titleHu, descriptionHu, transcriptHu }) {
+  const db = getDatabase();
+  db.prepare(
+    `UPDATE videos SET
+      title_hu = :titleHu,
+      description_hu = :descriptionHu,
+      transcript_hu = :transcriptHu,
+      updated_at = datetime('now')
+    WHERE id = :id`
+  ).run({ titleHu: titleHu || null, descriptionHu: descriptionHu || null, transcriptHu: transcriptHu || null, id: videoId });
+}
+
+export { upsertVideos, getAllVideos, getVideoCount, updateTranscriptStatus, updateTranslations };
