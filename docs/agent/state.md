@@ -6,33 +6,46 @@
 
 ## Legutóbbi állapot
 
+**Elkészült iteráció:** OUT-03
+
+**Dátum:** 2026-03-19
+
+**Elvégzett munka:**
+- `backend/src/services/scoring.js` – `getFreshnessScore`, `scoreVideo`, `getTop10`
+  - Formula: `(views*0.3) + (likes*0.4) + (freshnessScore*0.2) + (daxMentions*0.1)`
+  - `freshnessScore`: 100 - (napok * 10), minimum 0; 10+ napos videók = 0 → kiszűrve
+- `backend/src/api/videos.js` – `GET /api/top10` route
+- `backend/src/app.js` – videosRouter regisztrálva
+- `tests/unit/scoring.test.js` – 23 unit teszt (getFreshnessScore, scoreVideo, getTop10)
+- Teszteredmény: 36/36 unit teszt zöld (23 scoring + 13 ytdlp)
+
+**Technikai döntések:**
+- A `freshnessScore = 0` küszöb a 10 napos határnál van (nem 30 napon), mert `100 - 10*10 = 0` – a 30 napos filter implicit
+- `daxMentions` mezőt a scoring elfogadja (alapértelmezett 0), OUT-06-ban kerül feltöltésre
+- Referencia dátum (`now`) paraméter a scoring függvényekben → determinisztikus unit tesztek
+
+**Ami nem készült el:** –
+
+**Következő javasolt iteráció:** OUT-04
+
+---
+
+## Előző iteráció (OUT-02)
+
 **Elkészült iteráció:** OUT-02
 
 **Dátum:** 2026-03-19
 
 **Elvégzett munka:**
-- `backend/src/services/ytdlp.js` – yt-dlp service: `checkYtdlpInstalled`, `collectVideos`, `parseYtdlpOutput`; `execFile()` (nem `exec()`) használata shell injection megelőzéséhez; 2 mp delay yt-dlp hívások között; 60 mp timeout
-- `backend/src/db/videoRepository.js` – `upsertVideos` (INSERT OR IGNORE, manuális BEGIN/COMMIT/ROLLBACK tranzakcióval), `getAllVideos`, `getVideoCount`
-- `backend/src/api/ytdlp.js` – `GET /api/check-ytdlp` és `POST /api/collect` route-ok
-- `backend/src/app.js` – ytdlpRouter regisztrálva
-- `backend/jest.config.js` → `jest.config.cjs` átnevezve (ESM kompatibilitás); `package.json` test script frissítve `--experimental-vm-modules`-ra
-- `tests/unit/ytdlp.test.js` – 13 unit teszt a `parseYtdlpOutput` függvényre (mock, nincs éles YouTube hívás)
-- `tests/e2e/home.spec.js` – `/api/check-ytdlp` smoke teszt hozzáadva
+- `backend/src/services/ytdlp.js` – yt-dlp service: `checkYtdlpInstalled`, `collectVideos`, `parseYtdlpOutput`
+- `backend/src/db/videoRepository.js` – `upsertVideos` (INSERT OR IGNORE, manuális tranzakció)
+- `backend/src/api/ytdlp.js` – `GET /api/check-ytdlp` és `POST /api/collect`
+- Jest ESM fix: `jest.config.cjs` + `--experimental-vm-modules`
 - Teszteredmény: 13/13 unit teszt + 3/3 e2e teszt zöld
-
-**Technikai döntések:**
-- `node:sqlite` nem támogatja a `db.transaction()` metódust (better-sqlite3-hoz képest) → manuális `BEGIN`/`COMMIT`/`ROLLBACK` az `upsertVideos`-ban
-- Jest ESM: `jest.config.cjs` (CommonJS konfig) + `--experimental-vm-modules` flag
-- `YTDLP_PATH` env változó: lehetővé teszi a yt-dlp elérési útjának testreszabását (pl. Windows-on teljes elérési út)
-- description max 5000 karakter (DB méret optimalizálás)
-
-**Ami nem készült el:** –
-
-**Következő javasolt iteráció:** OUT-03
 
 ---
 
-## Előző iteráció
+## Előző iteráció (OUT-01)
 
 **Elkészült iteráció:** OUT-01
 
