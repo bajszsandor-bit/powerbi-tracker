@@ -19,7 +19,10 @@ const router = Router();
 router.get('/top10', (req, res, next) => {
   try {
     const videos = getAllVideos();
-    const top10 = getTop10(videos);
+    const top10 = getTop10(videos).map((v) => ({
+      ...v,
+      transcriptAvailable: Boolean(v.has_transcript),
+    }));
     res.json(top10);
   } catch (err) {
     next(err);

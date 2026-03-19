@@ -87,4 +87,18 @@ function getVideoCount() {
   return row.count;
 }
 
-export { upsertVideos, getAllVideos, getVideoCount };
+/**
+ * Frissíti egy videó felirat állapotát az adatbázisban.
+ *
+ * @param {string} videoId - YouTube videó azonosító
+ * @param {boolean} hasTranscript - Van-e felirat
+ * @returns {void}
+ */
+function updateTranscriptStatus(videoId, hasTranscript) {
+  const db = getDatabase();
+  db.prepare(
+    `UPDATE videos SET has_transcript = :hasTranscript, updated_at = datetime('now') WHERE id = :id`
+  ).run({ hasTranscript: hasTranscript ? 1 : 0, id: videoId });
+}
+
+export { upsertVideos, getAllVideos, getVideoCount, updateTranscriptStatus };

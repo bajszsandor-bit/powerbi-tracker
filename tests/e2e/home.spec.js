@@ -36,3 +36,13 @@ test('GET /api/check-ytdlp válaszol és tartalmaz installed mezőt', async ({ r
   expect(typeof body.installed).toBe('boolean');
   expect(body.helpUrl).toContain('github.com/yt-dlp');
 });
+
+test('GET /api/top10 visszaad transcriptAvailable mezőt minden videónál', async ({ request }) => {
+  const response = await request.get('http://localhost:3001/api/top10');
+  expect(response.ok()).toBeTruthy();
+  const body = await response.json();
+  expect(Array.isArray(body)).toBe(true);
+  for (const video of body) {
+    expect(typeof video.transcriptAvailable).toBe('boolean');
+  }
+});

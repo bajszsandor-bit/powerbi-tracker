@@ -6,27 +6,43 @@
 
 ## Legutóbbi állapot
 
+**Elkészült iteráció:** OUT-04
+
+**Dátum:** 2026-03-19
+
+**Elvégzett munka:**
+- `backend/src/services/transcript.js` – `parseVtt`, `downloadTranscript`, `getStoredTranscript`
+  - VTT feldolgozás: időbélyegek, HTML tagek, duplikátumok eltávolítása
+  - Letöltés: `yt-dlp --write-auto-sub --sub-lang en --skip-download`
+  - Ha nincs felirat: graceful null visszaadás (nem crashel)
+  - Feliratok mentése: `data/transcripts/[videoId].txt`
+- `backend/src/db/videoRepository.js` – `updateTranscriptStatus` hozzáadva
+- `backend/src/api/videos.js` – `transcriptAvailable` mező hozzáadva a top10 válaszhoz
+- `tests/unit/transcript.test.js` – 12 unit teszt a `parseVtt` függvényre
+- `tests/e2e/home.spec.js` – `/api/top10` transcriptAvailable smoke teszt
+- Teszteredmény: 48/48 unit teszt + 4/4 e2e teszt zöld
+
+**Technikai döntések:**
+- VTT → txt konverzió: a `.replace(/\s+/g, ' ')` normalizálja a whitespace-t (ez helyes viselkedés)
+- `downloadTranscript` az output template alapján a `[id].en.vtt` fájlt keresi
+- VTT fájlt törlés után csak a .txt marad (disk takarékosság)
+
+**Ami nem készült el:** –
+
+**Következő javasolt iteráció:** OUT-05
+
+---
+
+## Előző iteráció (OUT-03)
+
 **Elkészült iteráció:** OUT-03
 
 **Dátum:** 2026-03-19
 
 **Elvégzett munka:**
 - `backend/src/services/scoring.js` – `getFreshnessScore`, `scoreVideo`, `getTop10`
-  - Formula: `(views*0.3) + (likes*0.4) + (freshnessScore*0.2) + (daxMentions*0.1)`
-  - `freshnessScore`: 100 - (napok * 10), minimum 0; 10+ napos videók = 0 → kiszűrve
 - `backend/src/api/videos.js` – `GET /api/top10` route
-- `backend/src/app.js` – videosRouter regisztrálva
-- `tests/unit/scoring.test.js` – 23 unit teszt (getFreshnessScore, scoreVideo, getTop10)
-- Teszteredmény: 36/36 unit teszt zöld (23 scoring + 13 ytdlp)
-
-**Technikai döntések:**
-- A `freshnessScore = 0` küszöb a 10 napos határnál van (nem 30 napon), mert `100 - 10*10 = 0` – a 30 napos filter implicit
-- `daxMentions` mezőt a scoring elfogadja (alapértelmezett 0), OUT-06-ban kerül feltöltésre
-- Referencia dátum (`now`) paraméter a scoring függvényekben → determinisztikus unit tesztek
-
-**Ami nem készült el:** –
-
-**Következő javasolt iteráció:** OUT-04
+- 23 unit teszt + 36/36 összesen zöld
 
 ---
 
