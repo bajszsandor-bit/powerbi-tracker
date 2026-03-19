@@ -28,3 +28,11 @@ test('GET /api/health visszaad { status: "ok" }', async ({ request }) => {
   const body = await response.json();
   expect(body).toEqual({ status: 'ok' });
 });
+
+test('GET /api/check-ytdlp válaszol és tartalmaz installed mezőt', async ({ request }) => {
+  const response = await request.get('http://localhost:3001/api/check-ytdlp');
+  expect(response.ok()).toBeTruthy();
+  const body = await response.json();
+  expect(typeof body.installed).toBe('boolean');
+  expect(body.helpUrl).toContain('github.com/yt-dlp');
+});
