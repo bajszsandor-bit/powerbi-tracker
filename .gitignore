@@ -1,0 +1,5 @@
+videos.db
+videos.db-shm
+videos.db-wal
+transcripts/
+node_modules/
