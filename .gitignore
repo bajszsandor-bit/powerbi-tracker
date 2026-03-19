@@ -1,5 +1,8 @@
 videos.db
 videos.db-shm
 videos.db-wal
-transcripts/
+data/transcripts/
 node_modules/
+.env
+test-results/
+.claude/
