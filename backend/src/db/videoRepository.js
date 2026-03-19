@@ -120,4 +120,37 @@ function updateTranslations(videoId, { titleHu, descriptionHu, transcriptHu }) {
   ).run({ titleHu: titleHu || null, descriptionHu: descriptionHu || null, transcriptHu: transcriptHu || null, id: videoId });
 }
 
-export { upsertVideos, getAllVideos, getVideoCount, updateTranscriptStatus, updateTranslations };
+/**
+ * Elmenti egy videó DAX függvény adatait az adatbázisba.
+ *
+ * @param {string} videoId - YouTube videó azonosító
+ * @param {string[]} daxFunctions - Talált DAX függvény nevek tömbje
+ * @returns {void}
+ */
+function updateDaxFunctions(videoId, daxFunctions) {
+  const db = getDatabase();
+  db.prepare(
+    `UPDATE videos SET
+      dax_functions = :daxFunctions,
+      dax_mentions = :daxMentions,
+      updated_at = datetime('now')
+    WHERE id = :id`
+  ).run({
+    daxFunctions: JSON.stringify(daxFunctions),
+    daxMentions: daxFunctions.length,
+    id: videoId,
+  });
+}
+
+/**
+ * Visszaad egy videót azonosító alapján.
+ *
+ * @param {string} videoId - YouTube videó azonosító
+ * @returns {object | null} A videó objektuma, vagy null ha nem található
+ */
+function getVideoById(videoId) {
+  const db = getDatabase();
+  return db.prepare('SELECT * FROM videos WHERE id = :id').get({ id: videoId }) || null;
+}
+
+export { upsertVideos, getAllVideos, getVideoCount, updateTranscriptStatus, updateTranslations, updateDaxFunctions, getVideoById };

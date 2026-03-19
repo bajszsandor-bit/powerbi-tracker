@@ -6,30 +6,28 @@
 
 ## Legutóbbi állapot
 
-**Elkészült iteráció:** OUT-05
+**Elkészült iteráció:** OUT-06
 
 **Dátum:** 2026-03-19
 
 **Elvégzett munka:**
-- `backend/src/services/translation.js` – `translateText`, `translateVideo`
-  - `@vitalets/google-translate-api` (ingyenes, API kulcs nélkül)
-  - Fallback: hiba esetén az eredeti angol szöveg marad
-  - Idempotens: ha `title_hu` már létezik, nem fordít újra
-  - Rate limiting: 500ms delay hívások között
-- `backend/src/db/videoRepository.js` – `updateTranslations` hozzáadva
-- `backend/src/api/videos.js` – `titleHu` mező hozzáadva a top10 válaszhoz
-- `backend/jest.config.cjs` – `moduleDirectories` bővítve (`backend/node_modules`)
-- `tests/unit/translation.test.js` – 11 unit teszt (fallback, idempotencia, null kezelés)
-- `tests/e2e/home.spec.js` – `titleHu` mező smoke teszt
-- Teszteredmény: 59/59 unit teszt + 4/4 e2e teszt zöld
+- `backend/src/data/dax-reference.json` – 55 DAX függvény leírással és példakóddal
+- `backend/src/services/daxAnalyzer.js` – `extractDaxFunctions` (regex alapú, szóhatárral), `getDaxReference`, `getAllDaxFunctionNames`
+- `backend/src/db/videoRepository.js` – `updateDaxFunctions`, `getVideoById` hozzáadva
+- `backend/src/api/videos.js` – `GET /api/videos/:id` endpoint (daxFunctions részletes referenciával)
+- `tests/unit/daxAnalyzer.test.js` – 16 unit teszt (regex, kis/nagybetű, duplikátum, 50+ függvény ellenőrzés)
+- `tests/e2e/home.spec.js` – `GET /api/videos/:id` 404 smoke teszt
+- Teszteredmény: 75/75 unit teszt + 5/5 e2e teszt zöld
 
 **Technikai döntések:**
-- `jest.config.cjs` `moduleDirectories` bővítve: a `@vitalets/google-translate-api` `backend/node_modules`-ban van, de a tesztek a projekt gyökeréből futnak
-- `translateVideo` `jest.unstable_mockModule`-lal mock-olható (ESM async mock)
+- DAX regex szóhatár (`\b`) → nem illeszkedik pl. `SUMXYZ`-re
+- Függvény nevek hossz szerint rendezve a regexben (hosszabbak előre) → helyes illeszkedési sorrend
+- `dax_functions` TEXT-ként tárolva JSON-ként; `dax_mentions` = tömb hossza
+- OUT-03 scoring formula `daxMentions` mezőt már kezel (OUT-06 tölti fel az adatot)
 
 **Ami nem készült el:** –
 
-**Következő javasolt iteráció:** OUT-06
+**Következő javasolt iteráció:** OUT-07
 
 ---
 
