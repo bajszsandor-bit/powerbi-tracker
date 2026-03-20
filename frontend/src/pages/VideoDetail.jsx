@@ -79,6 +79,11 @@ function VideoDetail() {
   // Összefoglaló: AI > lefordított leírás > angol leírás
   const summary = video.aiSummaryHu || video.description_hu || video.description || null;
 
+  // Felirat: magyar átírás (első 3000 karakter, hogy ne legyen végtelen)
+  const transcript = video.transcript_hu
+    ? video.transcript_hu.slice(0, 3000) + (video.transcript_hu.length > 3000 ? '…' : '')
+    : null;
+
   return (
     <article className="detail">
       <nav className="detail__nav">
@@ -118,6 +123,18 @@ function VideoDetail() {
           </h3>
           <div className="detail__summary">
             {renderMarkdown(summary)}
+          </div>
+        </section>
+      )}
+
+      {/* ── Magyar felirat/átirat ── */}
+      {transcript && (
+        <section className="detail__section">
+          <h3 className="detail__section-title">
+            📝 Magyar felirat / átirat
+          </h3>
+          <div className="detail__transcript">
+            {transcript}
           </div>
         </section>
       )}

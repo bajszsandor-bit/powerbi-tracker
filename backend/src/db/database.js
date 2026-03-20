@@ -55,6 +55,7 @@ function initDatabase() {
       dax_mentions INTEGER DEFAULT 0,
       score REAL DEFAULT 0,
       ai_summary_hu TEXT,
+      is_imported INTEGER DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
@@ -63,6 +64,13 @@ function initDatabase() {
   // Migráció: ai_summary_hu oszlop hozzáadása ha még nincs
   try {
     db.exec('ALTER TABLE videos ADD COLUMN ai_summary_hu TEXT');
+  } catch {
+    // Oszlop már létezik – normális újraindításkor
+  }
+
+  // Migráció: is_imported oszlop hozzáadása ha még nincs
+  try {
+    db.exec('ALTER TABLE videos ADD COLUMN is_imported INTEGER DEFAULT 0');
   } catch {
     // Oszlop már létezik – normális újraindításkor
   }

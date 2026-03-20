@@ -4,13 +4,14 @@
  */
 
 import { Router } from 'express';
-import { getAllVideos, getVideoById, getLastUpdated, updateDaxFunctions, updateTranslations, updateAiSummary } from '../db/videoRepository.js';
+import { getAllVideos, getVideoById, getLastUpdated, updateDaxFunctions, updateTranslations, updateAiSummary, markAsImported, getImportedVideos } from '../db/videoRepository.js';
 import { getTop10 } from '../services/scoring.js';
 import { getDaxReference, extractDaxFunctions } from '../services/daxAnalyzer.js';
 import { checkYtdlpInstalled, collectVideos, fetchSingleVideo } from '../services/ytdlp.js';
 import { upsertVideos } from '../db/videoRepository.js';
 import { translateVideo } from '../services/translation.js';
 import { generateAiSummary } from '../services/aiSummary.js';
+import { downloadTranscript } from '../services/transcript.js';
 
 const router = Router();
 
@@ -137,6 +138,25 @@ router.get('/videos/:id', (req, res, next) => {
 });
 
 /**
+ * GET /api/archive
+ * Visszaadja az összes manuálisan importált és archivált videót.
+ *
+ * @returns {object[]} Importált videók tömbje
+ */
+router.get('/archive', (req, res, next) => {
+  try {
+    const videos = getImportedVideos().map((v) => ({
+      ...v,
+      titleHu: v.title_hu || null,
+      transcriptAvailable: Boolean(v.has_transcript),
+    }));
+    res.json({ videos });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * POST /api/import-video
  * Egy felhasználó által megadott YouTube URL alapján lekéri, lefordítja és elmenti a videót.
  * Szinkron feldolgozás – a válasz csak az elemzés végeztével érkezik.
@@ -165,22 +185,32 @@ router.post('/import-video', async (req, res, next) => {
     }
 
     upsertVideos([video]);
+    markAsImported(video.id);
 
     // DAX elemzés
     const text = `${video.title || ''} ${video.description || ''}`;
     const daxFns = extractDaxFunctions(text);
     updateDaxFunctions(video.id, daxFns);
 
-    // Magyar fordítás
+    // Felirat letöltés (angol, yt-dlp auto-sub)
+    const videoUrl = video.videoUrl || `https://www.youtube.com/watch?v=${video.id}`;
+    const transcriptEn = await downloadTranscript(video.id, videoUrl);
+
+    // Magyar fordítás (cím + leírás + felirat)
     const saved = getVideoById(video.id);
     if (saved && !saved.title_hu) {
-      const { titleHu, descriptionHu } = await translateVideo({
+      const { titleHu, descriptionHu, transcriptHu } = await translateVideo({
         id: video.id,
         title: video.title,
         description: video.description,
         title_hu: null,
+        transcript: transcriptEn ? transcriptEn.slice(0, 4000) : null,
       });
-      updateTranslations(video.id, { titleHu, descriptionHu, transcriptHu: null });
+      updateTranslations(video.id, { titleHu, descriptionHu, transcriptHu });
+      if (transcriptEn) {
+        const db2 = (await import('../db/database.js')).getDatabase();
+        db2.prepare(`UPDATE videos SET has_transcript = 1 WHERE id = :id`).run({ id: video.id });
+      }
     }
 
     // AI összefoglaló
@@ -200,6 +230,7 @@ router.post('/import-video', async (req, res, next) => {
       id: video.id,
       title: video.title,
       titleHu: final?.title_hu || null,
+      hasTranscript: Boolean(final?.has_transcript),
     });
   } catch (err) {
     next(err);

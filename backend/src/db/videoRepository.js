@@ -179,4 +179,28 @@ function updateAiSummary(videoId, summary) {
   ).run({ summary, id: videoId });
 }
 
-export { upsertVideos, getAllVideos, getVideoCount, updateTranscriptStatus, updateTranslations, updateDaxFunctions, getVideoById, getLastUpdated, updateAiSummary };
+/**
+ * Megjelöl egy videót manuálisan importáltként.
+ *
+ * @param {string} videoId - YouTube videó azonosító
+ */
+function markAsImported(videoId) {
+  const db = getDatabase();
+  db.prepare(
+    `UPDATE videos SET is_imported = 1, updated_at = datetime('now') WHERE id = :id`
+  ).run({ id: videoId });
+}
+
+/**
+ * Visszaadja az összes manuálisan importált videót.
+ *
+ * @returns {object[]} Importált videók tömbje (legújabb elöl)
+ */
+function getImportedVideos() {
+  const db = getDatabase();
+  return db.prepare(
+    'SELECT * FROM videos WHERE is_imported = 1 ORDER BY created_at DESC'
+  ).all();
+}
+
+export { upsertVideos, getAllVideos, getVideoCount, updateTranscriptStatus, updateTranslations, updateDaxFunctions, getVideoById, getLastUpdated, updateAiSummary, markAsImported, getImportedVideos };

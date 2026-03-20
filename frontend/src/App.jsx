@@ -9,6 +9,7 @@ import Home from './pages/Home.jsx';
 import VideoDetail from './pages/VideoDetail.jsx';
 import Channels from './pages/Channels.jsx';
 import ImportVideo from './pages/ImportVideo.jsx';
+import Archive from './pages/Archive.jsx';
 
 /**
  * App gyökér komponens.
@@ -37,6 +38,7 @@ function App() {
         <nav className="app-header__nav">
           <Link to="/" className="app-header__nav-link">Top 10 Videók</Link>
           <Link to="/channels" className="app-header__nav-link">Top Csatornák</Link>
+          <Link to="/archive" className="app-header__nav-link">📁 Archívum</Link>
           <Link to="/import" className="app-header__nav-link app-header__nav-link--accent">+ Videó hozzáadása</Link>
         </nav>
         <span
@@ -54,6 +56,7 @@ function App() {
         <Route path="/video/:id" element={<VideoDetail />} />
         <Route path="/channels" element={<Channels />} />
         <Route path="/import" element={<ImportVideo />} />
+        <Route path="/archive" element={<Archive />} />
       </Routes>
     </div>
   );
