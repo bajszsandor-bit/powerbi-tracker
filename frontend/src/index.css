@@ -1184,6 +1184,32 @@ body {
   color: #c0392b;
 }
 
+/* ── Fejezetek ── */
+.detail__chapters { margin: 24px 0; }
+.chapters__list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; }
+.chapters__item {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.chapters__item:hover { background: rgba(59,130,246,.08); border-left-color: #3b82f6; }
+.chapters__item--active { background: rgba(59,130,246,.12); border-left-color: #3b82f6; }
+.chapters__time { font-family: monospace; font-size: .85rem; color: #3b82f6; font-weight: 600; }
+.chapters__title { font-size: .9rem; color: #e2e8f0; }
+.chapters__item--active .chapters__title { color: #fff; font-weight: 500; }
+.chapters__duration { font-size: .75rem; color: #64748b; }
+.chapters__editor { margin-top: 12px; }
+.chapters__editor summary { cursor: pointer; font-size: .85rem; color: #64748b; padding: 8px 0; }
+.chapters__textarea { width: 100%; background: #0f172a; border: 1px solid #1e293b; color: #e2e8f0; border-radius: 8px; padding: 10px; font-family: monospace; font-size: .85rem; resize: vertical; }
+.chapters__editor button { margin-top: 8px; background: #3b82f6; color: #fff; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: .85rem; }
+.chapters__editor button:hover { background: #2563eb; }
+
 /* ── Responsive ── */
 @media (max-width: 600px) {
   .home__toolbar {

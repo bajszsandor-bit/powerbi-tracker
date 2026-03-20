@@ -1,6 +1,6 @@
 /**
  * @file VideoDetail.jsx
- * @description Videó részletes oldal – automatikus magyar felirat + TTS szinkronhang.
+ * @description Videó részletes oldal – automatikus magyar felirat + TTS szinkronhang + fejezet navigátor.
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -34,12 +34,18 @@ function VideoDetail() {
   const [currentSubtitle, setCurrentSubtitle] = useState('');
   const [ttsEnabled, setTtsEnabled] = useState(false);
 
+  // Fejezetek
+  const [chapters, setChapters] = useState([]);
+  const [currentChapter, setCurrentChapter] = useState(null);
+  const [chapterInput, setChapterInput] = useState('');
+
   // Refs – ezeket nem kell újra-renderelni
   const ttsEnabledRef = useRef(false);
   const lastSpokenRef = useRef(null);
   const playerRef = useRef(null);
   const intervalRef = useRef(null);
   const cuesRef = useRef([]);
+  const chaptersRef = useRef([]);
 
   // ttsEnabled → ref szinkronizálás
   useEffect(() => {
@@ -53,6 +59,15 @@ function VideoDetail() {
   useEffect(() => {
     cuesRef.current = cues;
   }, [cues]);
+
+  // chapters → ref szinkronizálás
+  useEffect(() => {
+    chaptersRef.current = chapters;
+    // Amikor fejezetek betöltődnek, pre-fill textarea szerkesztőhöz
+    if (chapters.length) {
+      setChapterInput(chapters.map(ch => `${ch.timeStr} ${ch.title}`).join('\n'));
+    }
+  }, [chapters]);
 
   // Videó betöltése
   useEffect(() => {
@@ -70,6 +85,9 @@ function VideoDetail() {
           if (data.transcriptCuesHu?.length) {
             setCues(data.transcriptCuesHu);
             setSubtitleStatus('ready');
+          }
+          if (data.chaptersJson?.length) {
+            setChapters(data.chaptersJson);
           }
         }
       })
@@ -105,6 +123,8 @@ function VideoDetail() {
       intervalRef.current = setInterval(() => {
         try {
           const t = player.getCurrentTime();
+
+          // Felirat követés
           const cue = cuesRef.current.find((c) => t >= c.start && t < c.end);
           setCurrentSubtitle(cue ? cue.text : '');
 
@@ -134,6 +154,15 @@ function VideoDetail() {
                 window.speechSynthesis.speak(utter);
               });
           }
+
+          // Fejezet követés
+          if (chaptersRef.current.length) {
+            let idx = 0;
+            for (let ci = 0; ci < chaptersRef.current.length; ci++) {
+              if (t >= chaptersRef.current[ci].time) idx = ci;
+            }
+            setCurrentChapter(idx);
+          }
         } catch { /* player nem kész */ }
       }, 300);
     }
@@ -162,6 +191,25 @@ function VideoDetail() {
       playerRef.current = null;
     };
   }, [hasCues]); // false→true átmenetnél fut egyszer
+
+  function handleSaveChapters() {
+    const lines = chapterInput.split('\n').filter(Boolean);
+    const parsed = lines.map(line => {
+      const m = line.match(/^(\d{1,2}:\d{2}(?::\d{2})?)\s+(.+)$/);
+      if (!m) return null;
+      const parts = m[1].split(':').map(Number);
+      const time = parts.length === 2
+        ? parts[0] * 60 + parts[1]
+        : parts[0] * 3600 + parts[1] * 60 + parts[2];
+      return { time, timeStr: m[1], title: m[2].trim() };
+    }).filter(Boolean).sort((a, b) => a.time - b.time);
+    if (!parsed.length) return;
+    fetch(`/api/videos/${id}/chapters`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chapters: parsed }),
+    }).then(r => r.json()).then(() => setChapters(parsed));
+  }
 
   if (status === 'loading') {
     return (
@@ -196,9 +244,6 @@ function VideoDetail() {
       })
     : null;
   const summary = video.aiSummaryHu || video.description_hu || video.description || null;
-  const transcript = video.transcript_hu
-    ? video.transcript_hu.slice(0, 3000) + (video.transcript_hu.length > 3000 ? '…' : '')
-    : null;
 
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const iframeSrc = `https://www.youtube-nocookie.com/embed/${video.id}?enablejsapi=1&origin=${origin}`;
@@ -260,19 +305,54 @@ function VideoDetail() {
         </div>
       </div>
 
+      {/* ── Fejezetek ── */}
+      {chapters.length > 0 && (
+        <section className="detail__chapters">
+          <h3 className="detail__section-title">📚 Fejezetek ({chapters.length})</h3>
+          <ol className="chapters__list">
+            {chapters.map((ch, i) => {
+              const isActive = currentChapter === i;
+              const duration = chapters[i + 1] ? chapters[i + 1].time - ch.time : null;
+              return (
+                <li
+                  key={i}
+                  className={`chapters__item${isActive ? ' chapters__item--active' : ''}`}
+                  onClick={() => {
+                    if (playerRef.current?.seekTo) playerRef.current.seekTo(ch.time, true);
+                  }}
+                >
+                  <span className="chapters__time">{ch.timeStr}</span>
+                  <span className="chapters__title">{ch.title}</span>
+                  {duration !== null && (
+                    <span className="chapters__duration">
+                      {Math.floor(duration / 60)}:{String(duration % 60).padStart(2, '0')}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      )}
+
+      {/* ── Fejezetek szerkesztő ── */}
+      <details className="chapters__editor">
+        <summary>✏️ Fejezetek szerkesztése</summary>
+        <textarea
+          className="chapters__textarea"
+          value={chapterInput}
+          onChange={e => setChapterInput(e.target.value)}
+          placeholder={'00:00 Bevezetés\n00:31 Következő fejezet\n...'}
+          rows={8}
+        />
+        <button onClick={handleSaveChapters}>💾 Mentés</button>
+      </details>
+
       {/* ── Magyar AI elemzés ── */}
       {summary && (
         <section className="detail__section detail__analysis">
           <h3 className="detail__section-title">🎓 Videó elemzés – Magyar oktatói leírás</h3>
           <div className="detail__summary">{renderMarkdown(summary)}</div>
-        </section>
-      )}
-
-      {/* ── Teljes szöveges átirat ── */}
-      {transcript && (
-        <section className="detail__section">
-          <h3 className="detail__section-title">📝 Magyar felirat / átirat (teljes szöveg)</h3>
-          <div className="detail__transcript">{transcript}</div>
         </section>
       )}
 

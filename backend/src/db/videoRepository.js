@@ -193,6 +193,18 @@ function updateTranscriptCues(videoId, cues) {
 }
 
 /**
+ * Elmenti egy videó fejezeteit JSON formátumban.
+ *
+ * @param {string} videoId - YouTube videó azonosító
+ * @param {{ time: number, timeStr: string, title: string }[]} chapters
+ */
+function updateChapters(videoId, chapters) {
+  const db = getDatabase();
+  db.prepare(`UPDATE videos SET chapters_json = :c, updated_at = datetime('now') WHERE id = :id`)
+    .run({ c: JSON.stringify(chapters), id: videoId });
+}
+
+/**
  * Megjelöl egy videót manuálisan importáltként.
  *
  * @param {string} videoId - YouTube videó azonosító
@@ -216,4 +228,4 @@ function getImportedVideos() {
   ).all();
 }
 
-export { upsertVideos, getAllVideos, getVideoCount, updateTranscriptStatus, updateTranslations, updateDaxFunctions, getVideoById, getLastUpdated, updateAiSummary, markAsImported, getImportedVideos, updateTranscriptCues };
+export { upsertVideos, getAllVideos, getVideoCount, updateTranscriptStatus, updateTranslations, updateDaxFunctions, getVideoById, getLastUpdated, updateAiSummary, markAsImported, getImportedVideos, updateTranscriptCues, updateChapters };

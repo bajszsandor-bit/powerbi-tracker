@@ -82,6 +82,13 @@ function initDatabase() {
     // Oszlop már létezik – normális újraindításkor
   }
 
+  // Migráció: chapters_json oszlop hozzáadása ha még nincs
+  try {
+    db.exec('ALTER TABLE videos ADD COLUMN chapters_json TEXT');
+  } catch {
+    // Oszlop már létezik – normális újraindításkor
+  }
+
   if (process.env.NODE_ENV !== 'production') {
     console.log(`[DB] SQLite adatbázis inicializálva: ${DB_PATH}`);
   }

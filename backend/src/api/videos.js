@@ -4,7 +4,7 @@
  */
 
 import { Router } from 'express';
-import { getAllVideos, getVideoById, getLastUpdated, updateDaxFunctions, updateTranslations, updateAiSummary, markAsImported, getImportedVideos, updateTranscriptCues } from '../db/videoRepository.js';
+import { getAllVideos, getVideoById, getLastUpdated, updateDaxFunctions, updateTranslations, updateAiSummary, markAsImported, getImportedVideos, updateTranscriptCues, updateChapters } from '../db/videoRepository.js';
 import { getTop10 } from '../services/scoring.js';
 import { getDaxReference, extractDaxFunctions } from '../services/daxAnalyzer.js';
 import { checkYtdlpInstalled, collectVideos, fetchSingleVideo } from '../services/ytdlp.js';
@@ -129,6 +129,8 @@ router.get('/videos/:id', (req, res, next) => {
       ? JSON.parse(video.transcript_cues_hu)
       : [];
 
+    const chaptersJson = video.chapters_json ? JSON.parse(video.chapters_json) : [];
+
     res.json({
       ...video,
       transcriptAvailable: Boolean(video.has_transcript),
@@ -136,6 +138,7 @@ router.get('/videos/:id', (req, res, next) => {
       aiSummaryHu: video.ai_summary_hu || null,
       daxFunctions,
       transcriptCuesHu,
+      chaptersJson,
     });
   } catch (err) {
     next(err);
@@ -304,6 +307,21 @@ router.post('/import-video', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+/**
+ * PUT /api/videos/:id/chapters
+ * Body: { chapters: [{time: number, timeStr: string, title: string}] }
+ */
+router.put('/videos/:id/chapters', async (req, res, next) => {
+  try {
+    const video = getVideoById(req.params.id);
+    if (!video) return res.status(404).json({ error: 'Videó nem található' });
+    const { chapters } = req.body;
+    if (!Array.isArray(chapters)) return res.status(400).json({ error: 'chapters tömb kötelező' });
+    updateChapters(req.params.id, chapters);
+    res.json({ ok: true, count: chapters.length });
+  } catch (err) { next(err); }
 });
 
 export default router;
