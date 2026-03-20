@@ -310,6 +310,73 @@ router.post('/import-video', async (req, res, next) => {
 });
 
 /**
+ * POST /api/videos/:id/analyze-chapter
+ * Body: { chapterIndex, chapterTitle, chapterTime, chapterEndTime }
+ * Uses stored transcript_hu + Anthropic API for senior-level Hungarian analysis.
+ *
+ * @returns {{ analysis: string, cached: boolean }}
+ */
+router.post('/videos/:id/analyze-chapter', async (req, res, next) => {
+  try {
+    const video = getVideoById(req.params.id);
+    if (!video) return res.status(404).json({ error: 'Videó nem található' });
+
+    const { chapterTitle, chapterTime, chapterEndTime } = req.body;
+
+    const transcriptContext = video.transcript_hu || video.transcript || '';
+    const videoTitle = video.title_hu || video.title || '';
+
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.json({
+        analysis: `**${chapterTitle}** (${formatChapterTime(chapterTime)})\n\nEz a fejezet a videó "${videoTitle}" részét képezi. Az AI elemzéshez kérlek állítsd be az ANTHROPIC_API_KEY értékét a .env fájlban.`,
+        cached: false,
+      });
+    }
+
+    const Anthropic = (await import('@anthropic-ai/sdk')).default;
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+    const timeLabel = chapterEndTime
+      ? `${formatChapterTime(chapterTime)} – ${formatChapterTime(chapterEndTime)}`
+      : formatChapterTime(chapterTime);
+
+    const prompt = `Senior Power BI / adatelemzési szakértőként elemezd a következő videófejezetett:
+
+Videó: "${videoTitle}"
+Fejezet: "${chapterTitle}"
+Időbélyeg: ${timeLabel}
+
+${transcriptContext ? `Videó kontextus (átirat részlete):\n${transcriptContext.slice(0, 2000)}` : ''}
+
+Kérlek:
+1. Pontosan azonosítsd, miről szól ez a fejezet
+2. Add vissza a tartalmat magyar nyelven, érthetően
+3. Egészítsd ki senior szintű szakmai magyarázattal és kontextussal
+4. Ha van döntési pont, probléma, megoldási minta vagy best practice, emeld ki
+5. Adj egy tömör szakmai összegzést
+
+Formázd markdown-ban, legyen strukturált és tanulásra alkalmas.`;
+
+    const message = await client.messages.create({
+      model: 'claude-haiku-3-5',
+      max_tokens: 800,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    res.json({ analysis: message.content[0].text, cached: false });
+  } catch (err) {
+    next(err);
+  }
+});
+
+function formatChapterTime(seconds) {
+  if (seconds == null) return '??:??';
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+/**
  * PUT /api/videos/:id/chapters
  * Body: { chapters: [{time: number, timeStr: string, title: string}] }
  */

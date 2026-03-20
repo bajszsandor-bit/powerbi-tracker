@@ -3,7 +3,7 @@
  * @description Videó részletes oldal – automatikus magyar felirat + TTS szinkronhang + fejezet navigátor.
  */
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 
 /** **félkövér** → <strong> konverzió egyszerű markdown-ból */
