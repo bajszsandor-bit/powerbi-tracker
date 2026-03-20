@@ -311,7 +311,9 @@ function VideoDetail() {
         year: 'numeric', month: 'long', day: 'numeric',
       })
     : null;
-  const summary = video.aiSummaryHu || video.description_hu || video.description || null;
+  const isHungarian = (t) => t && /[áéíóöőúüű]/i.test(t);
+  const rawSummary = video.aiSummaryHu || video.description_hu || null;
+  const summary = isHungarian(rawSummary) ? rawSummary : null;
 
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const iframeSrc = `https://www.youtube-nocookie.com/embed/${video.id}?enablejsapi=1&origin=${origin}`;
@@ -488,12 +490,13 @@ function VideoDetail() {
       </details>
 
       {/* ── Magyar AI elemzés ── */}
-      {summary && (
-        <section className="detail__section detail__analysis">
-          <h3 className="detail__section-title">🎓 Videó elemzés – Magyar oktatói leírás</h3>
-          <div className="detail__summary">{renderMarkdown(summary)}</div>
-        </section>
-      )}
+      <section className="detail__section detail__analysis">
+        <h3 className="detail__section-title">🎓 Videó elemzés – Magyar oktatói leírás</h3>
+        {summary
+          ? <div className="detail__summary">{renderMarkdown(summary)}</div>
+          : <p className="detail__summary--pending">⏳ Magyar összefoglaló generálása folyamatban – frissítsd az oldalt 1-2 perc múlva.</p>
+        }
+      </section>
 
       {/* ── DAX függvények ── */}
       {video.daxFunctions?.length > 0 && (

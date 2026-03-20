@@ -40,8 +40,8 @@ async function googleTranslate(text) {
  * Hiba esetén az eredeti szöveget adja vissza (graceful fallback).
  */
 async function translateText(text) {
-  if (!text || !text.trim()) return text;
-  return (await googleTranslate(text)) ?? text;
+  if (!text || !text.trim()) return null;
+  return (await googleTranslate(text)) ?? null; // null ha nem sikerült, NEM az eredeti angol szöveg
 }
 
 /**
