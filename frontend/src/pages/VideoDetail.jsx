@@ -100,9 +100,15 @@ function VideoDetail() {
     const looksHungarian = cues.length > 0 && /[áéíóöőúüű]/i.test(cues[0]?.text || '');
     if (looksHungarian) return;
     setSubtitleStatus('loading');
-    fetch(`/api/videos/${id}/subtitles`, { method: 'POST' })
+
+    // 45mp timeout – ha a fordítás rate-limited, ne fagyjon be az oldal
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
+
+    fetch(`/api/videos/${id}/subtitles`, { method: 'POST', signal: controller.signal })
       .then((res) => res.json())
       .then((data) => {
+        clearTimeout(timeoutId);
         if (data.cues?.length) {
           setCues(data.cues);
           setSubtitleStatus('ready');
@@ -110,7 +116,13 @@ function VideoDetail() {
           setSubtitleStatus('unavailable');
         }
       })
-      .catch(() => setSubtitleStatus('unavailable'));
+      .catch((err) => {
+        clearTimeout(timeoutId);
+        // AbortError = timeout → "próbáld újra" üzenet helyett csak unavailable
+        setSubtitleStatus('unavailable');
+      });
+
+    return () => { clearTimeout(timeoutId); controller.abort(); };
   }, [status, id]); // cues.length szándékosan nincs itt – egyszer fut le
 
   // YouTube IFrame API – csak egyszer hozza létre a playert, amikor az első cue megérkezik
