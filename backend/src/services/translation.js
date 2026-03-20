@@ -54,12 +54,31 @@ async function googleTranslate(text) {
 }
 
 /**
- * Fordítás: MyMemory → Google Translate fallback → null
+ * LibreTranslate (fedilab public instance) – harmadik fallback, korlátlan.
+ */
+async function libreTranslate(text) {
+  try {
+    const res = await fetch('https://translate.fedilab.app/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: text, source: 'en', target: 'hu', format: 'text' }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const t = data?.translatedText;
+    return (t && t !== text) ? t : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fordítás: MyMemory → LibreTranslate → Google Translate → null
  */
 async function translateText(text) {
   if (!text || !text.trim()) return null;
-  const result = (await myMemoryTranslate(text)) ?? (await googleTranslate(text)) ?? null;
-  return result;
+  return (await myMemoryTranslate(text)) ?? (await libreTranslate(text)) ?? (await googleTranslate(text)) ?? null;
 }
 
 /**
@@ -100,7 +119,7 @@ async function translateCues(cues, maxCues = 200) {
   for (let i = 0; i < limited.length; i += CHUNK) {
     const chunk = limited.slice(i, i + CHUNK);
     const combined = chunk.map((c) => c.text).join('\n');
-    const translated = await googleTranslate(combined);
+    const translated = (await myMemoryTranslate(combined)) ?? (await libreTranslate(combined)) ?? (await googleTranslate(combined));
     const parts = (translated || combined).split('\n');
     for (let j = 0; j < chunk.length; j++) {
       result.push({
