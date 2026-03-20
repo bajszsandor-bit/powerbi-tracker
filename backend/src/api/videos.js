@@ -154,9 +154,18 @@ router.post('/videos/:id/subtitles', async (req, res, next) => {
     const video = getVideoById(req.params.id);
     if (!video) return res.status(404).json({ error: 'Videó nem található' });
 
-    // Cache: ha már van lefordított cue → azonnal visszaadja
-    if (video.transcript_cues_hu) {
-      return res.json({ cues: JSON.parse(video.transcript_cues_hu), cached: true });
+    // Cache: ha már van cue
+    if (video.transcript_cues_hu && req.query.force !== 'true') {
+      const cached = JSON.parse(video.transcript_cues_hu);
+      const firstText = cached[0]?.text || '';
+      const looksHungarian = /[áéíóöőúüű]/i.test(firstText);
+      if (looksHungarian) {
+        return res.json({ cues: cached, cached: true });
+      }
+      // Angol cue-ok vannak → fordítsd le újra (ne töltsd le újra)
+      const cuesHu = await translateCues(cached, 200);
+      if (cuesHu.length) updateTranscriptCues(video.id, cuesHu);
+      return res.json({ cues: cuesHu, cached: false });
     }
 
     const ytdlpStatus = await checkYtdlpInstalled();

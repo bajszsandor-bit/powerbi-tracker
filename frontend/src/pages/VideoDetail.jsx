@@ -76,9 +76,11 @@ function VideoDetail() {
       .catch((err) => { setStatus('error'); setErrorMsg(err.message); });
   }, [id]);
 
-  // Auto felirat fetch – ha nincs cue
+  // Auto felirat fetch – ha nincs cue, vagy angolnak látszanak (nincs ékezetes karakter)
   useEffect(() => {
-    if (status !== 'ok' || cues.length > 0) return;
+    if (status !== 'ok') return;
+    const looksHungarian = cues.length > 0 && /[áéíóöőúüű]/i.test(cues[0]?.text || '');
+    if (looksHungarian) return;
     setSubtitleStatus('loading');
     fetch(`/api/videos/${id}/subtitles`, { method: 'POST' })
       .then((res) => res.json())
@@ -91,11 +93,12 @@ function VideoDetail() {
         }
       })
       .catch(() => setSubtitleStatus('unavailable'));
-  }, [status, id, cues.length]);
+  }, [status, id]); // cues.length szándékosan nincs itt – egyszer fut le
 
-  // YouTube IFrame API – csak egyszer hozza létre a playert, cues változásra
+  // YouTube IFrame API – csak egyszer hozza létre a playert, amikor az első cue megérkezik
+  const hasCues = cues.length > 0;
   useEffect(() => {
-    if (!cues.length) return;
+    if (!hasCues) return;
 
     function startPolling(player) {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -140,7 +143,7 @@ function VideoDetail() {
       if (intervalRef.current) clearInterval(intervalRef.current);
       playerRef.current = null;
     };
-  }, [cues]); // Csak egyszer – cues betöltésekor
+  }, [hasCues]); // false→true átmenetnél fut egyszer
 
   if (status === 'loading') {
     return (
@@ -179,7 +182,6 @@ function VideoDetail() {
     ? video.transcript_hu.slice(0, 3000) + (video.transcript_hu.length > 3000 ? '…' : '')
     : null;
 
-  const hasCues = cues.length > 0;
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const iframeSrc = `https://www.youtube-nocookie.com/embed/${video.id}?enablejsapi=1&origin=${origin}`;
 
