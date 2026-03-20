@@ -9,6 +9,7 @@ import cors from 'cors';
 import healthRouter from './api/health.js';
 import ytdlpRouter from './api/ytdlp.js';
 import videosRouter from './api/videos.js';
+import { getSchedulerStatus } from './services/scheduler.js';
 
 const app = express();
 
@@ -27,6 +28,16 @@ app.use(express.json());
 app.use('/api/health', healthRouter);
 app.use('/api', ytdlpRouter);
 app.use('/api', videosRouter);
+
+/**
+ * GET /api/status
+ * Visszaadja az ütemező állapotát: lastRefresh, nextRun, lastStatus, lastMessage.
+ *
+ * @returns {{ running: boolean, lastRefresh: string|null, lastStatus: string, lastMessage: string, nextRun: string }}
+ */
+app.get('/api/status', (req, res) => {
+  res.json(getSchedulerStatus());
+});
 
 /**
  * Globális hibakezelő middleware.

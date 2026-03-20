@@ -7,6 +7,7 @@
 import 'dotenv/config';
 import app from './app.js';
 import { initDatabase } from './db/database.js';
+import { startScheduler } from './services/scheduler.js';
 
 const PORT = process.env.PORT || 3001;
 
@@ -16,4 +17,5 @@ app.listen(PORT, () => {
   if (process.env.NODE_ENV !== 'production') {
     console.log(`[SERVER] Backend fut: http://localhost:${PORT}`);
   }
+  startScheduler();
 });

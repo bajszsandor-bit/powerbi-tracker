@@ -85,3 +85,13 @@ test('header cím kattintható és visszavisz a főoldalra', async ({ page }) =>
   await expect(page).toHaveURL('/');
   await expect(page.locator('h1, .app-header__title')).toBeVisible();
 });
+
+test('GET /api/status visszaad lastRefresh és nextRun mezőt', async ({ request }) => {
+  const response = await request.get('http://localhost:3001/api/status');
+  expect(response.ok()).toBeTruthy();
+  const body = await response.json();
+  expect('lastRefresh' in body).toBe(true);
+  expect('nextRun' in body).toBe(true);
+  expect('lastStatus' in body).toBe(true);
+  expect(typeof body.running).toBe('boolean');
+});

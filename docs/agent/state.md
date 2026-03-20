@@ -6,6 +6,29 @@
 
 ## Legutóbbi állapot
 
+**Elkészült iteráció:** OUT-09
+
+**Dátum:** 2026-03-20
+
+**Elvégzett munka:**
+- `backend/src/services/scheduler.js` – node-cron ütemező (08:00), indításkori feltételes frissítés (üres DB vagy > 20 óra régi), párhuzamos futás lock, `logs/refresh.log` naplózás
+- `backend/src/app.js` – `GET /api/status` endpoint (lastRefresh, nextRun, lastStatus, lastMessage, running)
+- `backend/src/server.js` – `startScheduler()` hívás szerver indulás után
+- `tests/e2e/home.spec.js` – 1 új teszt; összesen 10/10 e2e zöld
+
+**Technikai döntések:**
+- `state` modul-szintű objektum tárol futási állapotot (running flag = párhuzamos futás megakadályozása)
+- `nextRun` mindig a következő 08:00-ra mutat
+- Indításkor 3 mp késleltetés hogy a szerver teljesen inicializálódjon
+
+**Ami nem készült el:** –
+
+**Következő javasolt iteráció:** OUT-10
+
+---
+
+## Előző iteráció (OUT-08)
+
 **Elkészült iteráció:** OUT-08
 
 **Dátum:** 2026-03-20
