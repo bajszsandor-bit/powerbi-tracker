@@ -110,6 +110,7 @@ async function downloadTranscript(videoId, videoUrl) {
 
     const vttContent = readFileSync(expectedVtt, 'utf8');
     const cleanText = parseVtt(vttContent);
+    const cues = parseVttCues(vttContent);
 
     // Eredeti VTT törlése, csak a tiszta txt marad
     try {
@@ -118,14 +119,14 @@ async function downloadTranscript(videoId, videoUrl) {
       // nem kritikus
     }
 
-    if (!cleanText) return null;
+    if (!cleanText) return { plainText: null, cues: [] };
 
     const txtPath = getTranscriptPath(videoId);
     writeFileSync(txtPath, cleanText, 'utf8');
 
-    return cleanText;
+    return { plainText: cleanText, cues };
   } catch {
-    return null;
+    return { plainText: null, cues: [] };
   }
 }
 
@@ -142,4 +143,50 @@ function getStoredTranscript(videoId) {
   return readFileSync(txtPath, 'utf8');
 }
 
-export { parseVtt, downloadTranscript, getStoredTranscript, getTranscriptPath };
+/**
+ * Időbélyeges VTT tartalmát cue objektumok tömbjévé alakítja.
+ * Visszaadja: [{start: másodperc, end: másodperc, text: string}]
+ *
+ * @param {string} vttContent - A VTT fájl nyers tartalma
+ * @returns {{ start: number, end: number, text: string }[]}
+ */
+function parseVttCues(vttContent) {
+  const cues = [];
+  const lines = vttContent.split('\n');
+  let i = 0;
+
+  function tsToSec(ts) {
+    const [h, m, s] = ts.replace(',', '.').split(':');
+    return parseInt(h) * 3600 + parseInt(m) * 60 + parseFloat(s);
+  }
+
+  while (i < lines.length) {
+    const line = lines[i].trim();
+    const match = line.match(
+      /^(\d{2}:\d{2}:\d{2}[.,]\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}[.,]\d{3})/
+    );
+    if (match) {
+      const start = tsToSec(match[1]);
+      const end = tsToSec(match[2]);
+      i++;
+      const parts = [];
+      while (i < lines.length && lines[i].trim()) {
+        const clean = lines[i].replace(/<[^>]+>/g, '').trim();
+        if (clean) parts.push(clean);
+        i++;
+      }
+      if (parts.length) {
+        const text = parts.join(' ');
+        // YouTube auto-sub ismétlések kiszűrése
+        if (!cues.length || cues[cues.length - 1].text !== text) {
+          cues.push({ start, end, text });
+        }
+      }
+    } else {
+      i++;
+    }
+  }
+  return cues;
+}
+
+export { parseVtt, parseVttCues, downloadTranscript, getStoredTranscript, getTranscriptPath };

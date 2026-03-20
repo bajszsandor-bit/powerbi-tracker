@@ -75,6 +75,13 @@ function initDatabase() {
     // Oszlop már létezik – normális újraindításkor
   }
 
+  // Migráció: transcript_cues_hu oszlop hozzáadása ha még nincs
+  try {
+    db.exec('ALTER TABLE videos ADD COLUMN transcript_cues_hu TEXT');
+  } catch {
+    // Oszlop már létezik – normális újraindításkor
+  }
+
   if (process.env.NODE_ENV !== 'production') {
     console.log(`[DB] SQLite adatbázis inicializálva: ${DB_PATH}`);
   }

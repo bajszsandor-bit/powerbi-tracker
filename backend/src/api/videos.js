@@ -4,12 +4,12 @@
  */
 
 import { Router } from 'express';
-import { getAllVideos, getVideoById, getLastUpdated, updateDaxFunctions, updateTranslations, updateAiSummary, markAsImported, getImportedVideos } from '../db/videoRepository.js';
+import { getAllVideos, getVideoById, getLastUpdated, updateDaxFunctions, updateTranslations, updateAiSummary, markAsImported, getImportedVideos, updateTranscriptCues } from '../db/videoRepository.js';
 import { getTop10 } from '../services/scoring.js';
 import { getDaxReference, extractDaxFunctions } from '../services/daxAnalyzer.js';
 import { checkYtdlpInstalled, collectVideos, fetchSingleVideo } from '../services/ytdlp.js';
 import { upsertVideos } from '../db/videoRepository.js';
-import { translateVideo } from '../services/translation.js';
+import { translateVideo, translateCues } from '../services/translation.js';
 import { generateAiSummary } from '../services/aiSummary.js';
 import { downloadTranscript } from '../services/transcript.js';
 
@@ -125,12 +125,17 @@ router.get('/videos/:id', (req, res, next) => {
       ...getDaxReference(name),
     }));
 
+    const transcriptCuesHu = video.transcript_cues_hu
+      ? JSON.parse(video.transcript_cues_hu)
+      : [];
+
     res.json({
       ...video,
       transcriptAvailable: Boolean(video.has_transcript),
       titleHu: video.title_hu || null,
       aiSummaryHu: video.ai_summary_hu || null,
       daxFunctions,
+      transcriptCuesHu,
     });
   } catch (err) {
     next(err);
@@ -194,9 +199,9 @@ router.post('/import-video', async (req, res, next) => {
 
     // Felirat letöltés (angol, yt-dlp auto-sub)
     const videoUrl = video.videoUrl || `https://www.youtube.com/watch?v=${video.id}`;
-    const transcriptEn = await downloadTranscript(video.id, videoUrl);
+    const { plainText: transcriptEn, cues: transcriptCues } = await downloadTranscript(video.id, videoUrl);
 
-    // Magyar fordítás (cím + leírás + felirat)
+    // Magyar fordítás (cím + leírás + felirat szöveg)
     const saved = getVideoById(video.id);
     if (saved && !saved.title_hu) {
       const { titleHu, descriptionHu, transcriptHu } = await translateVideo({
@@ -211,6 +216,12 @@ router.post('/import-video', async (req, res, next) => {
         const db2 = (await import('../db/database.js')).getDatabase();
         db2.prepare(`UPDATE videos SET has_transcript = 1 WHERE id = :id`).run({ id: video.id });
       }
+    }
+
+    // Szinkronizált magyar cue-ok fordítása (max 200 mondat)
+    if (transcriptCues && transcriptCues.length > 0) {
+      const cuesHu = await translateCues(transcriptCues, 200);
+      if (cuesHu.length) updateTranscriptCues(video.id, cuesHu);
     }
 
     // AI összefoglaló

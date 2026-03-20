@@ -1,9 +1,9 @@
 /**
  * @file VideoDetail.jsx
- * @description Videó részletes oldal – YouTube iframe és magyar AI oktatói elemzés.
+ * @description Videó részletes oldal – YouTube iframe, szinkronizált magyar felirat és elemzés.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 
 /** **félkövér** → <strong> konverzió egyszerű markdown-ból */
@@ -28,6 +28,9 @@ function VideoDetail() {
   const [video, setVideo] = useState(null);
   const [status, setStatus] = useState('loading');
   const [errorMsg, setErrorMsg] = useState('');
+  const [currentSubtitle, setCurrentSubtitle] = useState('');
+  const playerRef = useRef(null);
+  const intervalRef = useRef(null);
 
   useEffect(() => {
     setStatus('loading');
@@ -40,6 +43,55 @@ function VideoDetail() {
       .then((data) => { if (data) { setVideo(data); setStatus('ok'); } })
       .catch((err) => { setStatus('error'); setErrorMsg(err.message); });
   }, [id]);
+
+  // YouTube IFrame API – szinkron felirat
+  useEffect(() => {
+    if (!video || !video.transcriptCuesHu || !video.transcriptCuesHu.length) return;
+
+    const cues = video.transcriptCuesHu;
+
+    function startPolling(player) {
+      intervalRef.current = setInterval(() => {
+        try {
+          const t = player.getCurrentTime();
+          const cue = cues.find((c) => t >= c.start && t < c.end);
+          setCurrentSubtitle(cue ? cue.text : '');
+        } catch {
+          // player még nem kész
+        }
+      }, 250);
+    }
+
+    function createPlayer() {
+      playerRef.current = new window.YT.Player('yt-player', {
+        events: {
+          onReady(e) {
+            startPolling(e.target);
+          },
+        },
+      });
+    }
+
+    if (window.YT && window.YT.Player) {
+      createPlayer();
+    } else {
+      const prev = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (prev) prev();
+        createPlayer();
+      };
+      if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(tag);
+      }
+    }
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      try { playerRef.current?.destroy(); } catch {}
+    };
+  }, [video]);
 
   if (status === 'loading') {
     return (
@@ -76,10 +128,16 @@ function VideoDetail() {
       })
     : null;
 
+  const hasCues = video.transcriptCuesHu && video.transcriptCuesHu.length > 0;
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const iframeSrc = hasCues
+    ? `https://www.youtube-nocookie.com/embed/${video.id}?enablejsapi=1&origin=${origin}`
+    : `https://www.youtube-nocookie.com/embed/${video.id}`;
+
   // Összefoglaló: AI > lefordított leírás > angol leírás
   const summary = video.aiSummaryHu || video.description_hu || video.description || null;
 
-  // Felirat: magyar átírás (első 3000 karakter, hogy ne legyen végtelen)
+  // Teljes szöveges átirat (első 3000 karakter)
   const transcript = video.transcript_hu
     ? video.transcript_hu.slice(0, 3000) + (video.transcript_hu.length > 3000 ? '…' : '')
     : null;
@@ -91,14 +149,27 @@ function VideoDetail() {
       </nav>
 
       {/* ── Videó lejátszó ── */}
-      <div className="detail__player">
-        <iframe
-          className="detail__iframe"
-          src={`https://www.youtube-nocookie.com/embed/${video.id}`}
-          title={title}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
+      <div className="detail__player-wrap">
+        <div className="detail__player">
+          <iframe
+            id="yt-player"
+            className="detail__iframe"
+            src={iframeSrc}
+            title={title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+
+        {/* ── Szinkronizált felirat sáv ── */}
+        {hasCues && (
+          <div className={`detail__subtitle-bar${currentSubtitle ? ' detail__subtitle-bar--active' : ''}`}>
+            <span className="detail__subtitle-bar__label">🇭🇺</span>
+            <p className="detail__subtitle-bar__text">
+              {currentSubtitle || '—'}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* ── Cím + meta ── */}
@@ -111,6 +182,9 @@ function VideoDetail() {
             <span className="detail__views">
               👁 {Number(video.view_count).toLocaleString('hu-HU')} megtekintés
             </span>
+          )}
+          {hasCues && (
+            <span className="detail__subtitle-badge">📝 Magyar felirat</span>
           )}
         </div>
       </div>
@@ -127,11 +201,11 @@ function VideoDetail() {
         </section>
       )}
 
-      {/* ── Magyar felirat/átirat ── */}
+      {/* ── Magyar felirat teljes szöveg ── */}
       {transcript && (
         <section className="detail__section">
           <h3 className="detail__section-title">
-            📝 Magyar felirat / átirat
+            📝 Magyar felirat / átirat (teljes szöveg)
           </h3>
           <div className="detail__transcript">
             {transcript}

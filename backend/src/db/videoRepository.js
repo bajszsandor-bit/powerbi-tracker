@@ -180,6 +180,19 @@ function updateAiSummary(videoId, summary) {
 }
 
 /**
+ * Elmenti egy videó szinkronizált magyar felirat cue-jait.
+ *
+ * @param {string} videoId
+ * @param {{ start: number, end: number, text: string }[]} cues
+ */
+function updateTranscriptCues(videoId, cues) {
+  const db = getDatabase();
+  db.prepare(
+    `UPDATE videos SET transcript_cues_hu = :cues, updated_at = datetime('now') WHERE id = :id`
+  ).run({ cues: JSON.stringify(cues), id: videoId });
+}
+
+/**
  * Megjelöl egy videót manuálisan importáltként.
  *
  * @param {string} videoId - YouTube videó azonosító
@@ -203,4 +216,4 @@ function getImportedVideos() {
   ).all();
 }
 
-export { upsertVideos, getAllVideos, getVideoCount, updateTranscriptStatus, updateTranslations, updateDaxFunctions, getVideoById, getLastUpdated, updateAiSummary, markAsImported, getImportedVideos };
+export { upsertVideos, getAllVideos, getVideoCount, updateTranscriptStatus, updateTranslations, updateDaxFunctions, getVideoById, getLastUpdated, updateAiSummary, markAsImported, getImportedVideos, updateTranscriptCues };

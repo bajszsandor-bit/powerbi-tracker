@@ -71,4 +71,44 @@ async function translateVideo(video) {
   return { titleHu, descriptionHu, transcriptHu };
 }
 
-export { translateText, translateVideo };
+/**
+ * Lefordítja az angol VTT cue-ok szövegét magyarra, csoportokban.
+ * Minden csoport 5 mondatot tartalmaz, elválasztó: ` ||| `
+ * Legfeljebb maxCues cue-t fordít (alapértelmezett: 200).
+ *
+ * @param {{ start: number, end: number, text: string }[]} cues - Angol cue-ok
+ * @param {number} [maxCues=200] - Maximum fordítandó cue-ok száma
+ * @returns {Promise<{ start: number, end: number, text: string }[]>} Magyar cue-ok
+ */
+async function translateCues(cues, maxCues = 200) {
+  if (!cues || !cues.length) return [];
+  const limited = cues.slice(0, maxCues);
+  const CHUNK = 5;
+  const SEP = ' ||| ';
+  const result = [];
+
+  for (let i = 0; i < limited.length; i += CHUNK) {
+    const chunk = limited.slice(i, i + CHUNK);
+    const combined = chunk.map((c) => c.text).join(SEP);
+    let translated;
+    try {
+      const res = await translate(combined, { from: 'en', to: 'hu' });
+      translated = res.text || combined;
+    } catch {
+      translated = combined;
+    }
+    const parts = translated.split(SEP);
+    for (let j = 0; j < chunk.length; j++) {
+      result.push({
+        start: chunk[j].start,
+        end: chunk[j].end,
+        text: (parts[j] || chunk[j].text).trim(),
+      });
+    }
+    await sleep(TRANSLATE_DELAY_MS);
+  }
+
+  return result;
+}
+
+export { translateText, translateVideo, translateCues };
