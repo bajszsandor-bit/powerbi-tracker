@@ -1,9 +1,9 @@
 /**
  * @file VideoDetail.jsx
- * @description Videó részletes oldal – YouTube iframe, szinkronizált magyar felirat és elemzés.
+ * @description Videó részletes oldal – automatikus magyar felirat + TTS szinkronhang.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 
 /** **félkövér** → <strong> konverzió egyszerű markdown-ból */
@@ -28,10 +28,21 @@ function VideoDetail() {
   const [video, setVideo] = useState(null);
   const [status, setStatus] = useState('loading');
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Felirat állapot
+  const [cues, setCues] = useState([]);
+  const [subtitleStatus, setSubtitleStatus] = useState('idle'); // idle | loading | ready | unavailable
   const [currentSubtitle, setCurrentSubtitle] = useState('');
+
+  // TTS szinkronhang
+  const [ttsEnabled, setTtsEnabled] = useState(false);
+  const lastSpokenCueRef = useRef(null);
+
+  // YouTube IFrame API
   const playerRef = useRef(null);
   const intervalRef = useRef(null);
 
+  // Videó betöltése
   useEffect(() => {
     setStatus('loading');
     fetch(`/api/videos/${id}`)
@@ -40,35 +51,70 @@ function VideoDetail() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       })
-      .then((data) => { if (data) { setVideo(data); setStatus('ok'); } })
+      .then((data) => {
+        if (data) {
+          setVideo(data);
+          setStatus('ok');
+          if (data.transcriptCuesHu && data.transcriptCuesHu.length) {
+            setCues(data.transcriptCuesHu);
+            setSubtitleStatus('ready');
+          }
+        }
+      })
       .catch((err) => { setStatus('error'); setErrorMsg(err.message); });
   }, [id]);
 
-  // YouTube IFrame API – szinkron felirat
+  // Auto felirat letöltés – ha nincs még cue
   useEffect(() => {
-    if (!video || !video.transcriptCuesHu || !video.transcriptCuesHu.length) return;
-
-    const cues = video.transcriptCuesHu;
-
-    function startPolling(player) {
-      intervalRef.current = setInterval(() => {
-        try {
-          const t = player.getCurrentTime();
-          const cue = cues.find((c) => t >= c.start && t < c.end);
-          setCurrentSubtitle(cue ? cue.text : '');
-        } catch {
-          // player még nem kész
+    if (status !== 'ok' || cues.length > 0) return;
+    setSubtitleStatus('loading');
+    fetch(`/api/videos/${id}/subtitles`, { method: 'POST' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.cues && data.cues.length) {
+          setCues(data.cues);
+          setSubtitleStatus('ready');
+        } else {
+          setSubtitleStatus('unavailable');
         }
-      }, 250);
-    }
+      })
+      .catch(() => setSubtitleStatus('unavailable'));
+  }, [status, id, cues.length]);
+
+  // YouTube IFrame API – szinkron felirat polling
+  const startPolling = useCallback((player) => {
+    intervalRef.current = setInterval(() => {
+      try {
+        const t = player.getCurrentTime();
+        const cue = cues.find((c) => t >= c.start && t < c.end);
+        const text = cue ? cue.text : '';
+        setCurrentSubtitle(text);
+
+        // TTS szinkronhang
+        if (ttsEnabled && cue && cue !== lastSpokenCueRef.current && window.speechSynthesis) {
+          lastSpokenCueRef.current = cue;
+          window.speechSynthesis.cancel();
+          const utter = new SpeechSynthesisUtterance(cue.text);
+          utter.lang = 'hu-HU';
+          utter.rate = 1.05;
+          window.speechSynthesis.speak(utter);
+        }
+      } catch {
+        // player nem kész
+      }
+    }, 200);
+  }, [cues, ttsEnabled]);
+
+  useEffect(() => {
+    if (!cues.length) return;
+    if (intervalRef.current) clearInterval(intervalRef.current);
 
     function createPlayer() {
+      if (playerRef.current) {
+        try { playerRef.current.destroy(); } catch {}
+      }
       playerRef.current = new window.YT.Player('yt-player', {
-        events: {
-          onReady(e) {
-            startPolling(e.target);
-          },
-        },
+        events: { onReady(e) { startPolling(e.target); } },
       });
     }
 
@@ -76,10 +122,7 @@ function VideoDetail() {
       createPlayer();
     } else {
       const prev = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => {
-        if (prev) prev();
-        createPlayer();
-      };
+      window.onYouTubeIframeAPIReady = () => { if (prev) prev(); createPlayer(); };
       if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
         const tag = document.createElement('script');
         tag.src = 'https://www.youtube.com/iframe_api';
@@ -89,10 +132,17 @@ function VideoDetail() {
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
-      try { playerRef.current?.destroy(); } catch {}
     };
-  }, [video]);
+  }, [cues, startPolling]);
 
+  // TTS ki-bekapcsol: ha kikapcsoljuk, leállítjuk a beszédet
+  useEffect(() => {
+    if (!ttsEnabled && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  }, [ttsEnabled]);
+
+  // ── Állapotok ──
   if (status === 'loading') {
     return (
       <div className="detail-state">
@@ -101,7 +151,6 @@ function VideoDetail() {
       </div>
     );
   }
-
   if (status === 'notfound') {
     return (
       <div className="detail-state detail-state--error">
@@ -110,7 +159,6 @@ function VideoDetail() {
       </div>
     );
   }
-
   if (status === 'error') {
     return (
       <div className="detail-state detail-state--error">
@@ -127,20 +175,14 @@ function VideoDetail() {
         year: 'numeric', month: 'long', day: 'numeric',
       })
     : null;
-
-  const hasCues = video.transcriptCuesHu && video.transcriptCuesHu.length > 0;
-  const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  const iframeSrc = hasCues
-    ? `https://www.youtube-nocookie.com/embed/${video.id}?enablejsapi=1&origin=${origin}`
-    : `https://www.youtube-nocookie.com/embed/${video.id}`;
-
-  // Összefoglaló: AI > lefordított leírás > angol leírás
   const summary = video.aiSummaryHu || video.description_hu || video.description || null;
-
-  // Teljes szöveges átirat (első 3000 karakter)
   const transcript = video.transcript_hu
     ? video.transcript_hu.slice(0, 3000) + (video.transcript_hu.length > 3000 ? '…' : '')
     : null;
+
+  const hasCues = cues.length > 0;
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const iframeSrc = `https://www.youtube-nocookie.com/embed/${video.id}?enablejsapi=1&origin=${origin}`;
 
   return (
     <article className="detail">
@@ -161,15 +203,26 @@ function VideoDetail() {
           />
         </div>
 
-        {/* ── Szinkronizált felirat sáv ── */}
-        {hasCues && (
-          <div className={`detail__subtitle-bar${currentSubtitle ? ' detail__subtitle-bar--active' : ''}`}>
-            <span className="detail__subtitle-bar__label">🇭🇺</span>
-            <p className="detail__subtitle-bar__text">
-              {currentSubtitle || '—'}
-            </p>
-          </div>
-        )}
+        {/* ── Felirat sáv (mindig látható, állapot szerint) ── */}
+        <div className={`detail__subtitle-bar${hasCues && currentSubtitle ? ' detail__subtitle-bar--active' : ''}`}>
+          <span className="detail__subtitle-bar__flag">🇭🇺</span>
+          <p className="detail__subtitle-bar__text">
+            {subtitleStatus === 'loading' && !hasCues
+              ? '⏳ Magyar felirat betöltése...'
+              : subtitleStatus === 'unavailable'
+              ? 'Ehhez a videóhoz nincs automatikus felirat'
+              : currentSubtitle || (hasCues ? '—' : '⏳ Felirat előkészítése...')}
+          </p>
+          {hasCues && (
+            <button
+              className={`detail__tts-btn${ttsEnabled ? ' detail__tts-btn--on' : ''}`}
+              onClick={() => setTtsEnabled((v) => !v)}
+              title={ttsEnabled ? 'Magyar szinkronhang kikapcsolása' : 'Magyar szinkronhang bekapcsolása'}
+            >
+              {ttsEnabled ? '🔊 Szinkron BE' : '🔇 Szinkron KI'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Cím + meta ── */}
@@ -183,33 +236,23 @@ function VideoDetail() {
               👁 {Number(video.view_count).toLocaleString('hu-HU')} megtekintés
             </span>
           )}
-          {hasCues && (
-            <span className="detail__subtitle-badge">📝 Magyar felirat</span>
-          )}
+          {hasCues && <span className="detail__subtitle-badge">📝 Magyar felirat</span>}
         </div>
       </div>
 
       {/* ── Magyar AI elemzés ── */}
       {summary && (
         <section className="detail__section detail__analysis">
-          <h3 className="detail__section-title">
-            🎓 Videó elemzés – Magyar oktatói leírás
-          </h3>
-          <div className="detail__summary">
-            {renderMarkdown(summary)}
-          </div>
+          <h3 className="detail__section-title">🎓 Videó elemzés – Magyar oktatói leírás</h3>
+          <div className="detail__summary">{renderMarkdown(summary)}</div>
         </section>
       )}
 
-      {/* ── Magyar felirat teljes szöveg ── */}
+      {/* ── Teljes szöveges átirat ── */}
       {transcript && (
         <section className="detail__section">
-          <h3 className="detail__section-title">
-            📝 Magyar felirat / átirat (teljes szöveg)
-          </h3>
-          <div className="detail__transcript">
-            {transcript}
-          </div>
+          <h3 className="detail__section-title">📝 Magyar felirat / átirat (teljes szöveg)</h3>
+          <div className="detail__transcript">{transcript}</div>
         </section>
       )}
 
@@ -224,9 +267,7 @@ function VideoDetail() {
               <div key={fn.name} className="dax-card">
                 <h4 className="dax-card__name">{fn.name}</h4>
                 {fn.description && <p className="dax-card__desc">{fn.description}</p>}
-                {fn.example && (
-                  <pre className="dax-card__code"><code>{fn.example}</code></pre>
-                )}
+                {fn.example && <pre className="dax-card__code"><code>{fn.example}</code></pre>}
               </div>
             ))}
           </div>

@@ -143,6 +143,55 @@ router.get('/videos/:id', (req, res, next) => {
 });
 
 /**
+ * POST /api/videos/:id/subtitles
+ * Bármely videóhoz letölti az automatikus feliratot és lefordítja magyarra.
+ * Ha már van transcript_cues_hu, azonnal visszaadja (cache).
+ *
+ * @returns {{ cues: {start,end,text}[], cached: boolean }}
+ */
+router.post('/videos/:id/subtitles', async (req, res, next) => {
+  try {
+    const video = getVideoById(req.params.id);
+    if (!video) return res.status(404).json({ error: 'Videó nem található' });
+
+    // Cache: ha már van lefordított cue → azonnal visszaadja
+    if (video.transcript_cues_hu) {
+      return res.json({ cues: JSON.parse(video.transcript_cues_hu), cached: true });
+    }
+
+    const ytdlpStatus = await checkYtdlpInstalled();
+    if (!ytdlpStatus.installed) {
+      return res.status(503).json({ error: 'yt-dlp nincs telepítve' });
+    }
+
+    const videoUrl = video.video_url || `https://www.youtube.com/watch?v=${video.id}`;
+    const { plainText: transcriptEn, cues: transcriptCues } = await downloadTranscript(video.id, videoUrl);
+
+    if (!transcriptCues || !transcriptCues.length) {
+      return res.status(404).json({ error: 'Ehhez a videóhoz nincs automatikus felirat' });
+    }
+
+    // Magyar fordítás mentése (plain text + szinkron cue-ok)
+    if (!video.transcript_hu && transcriptEn) {
+      const { translateText } = await import('../services/translation.js');
+      const transcriptHu = await translateText(transcriptEn.slice(0, 4000));
+      const saved = getVideoById(video.id);
+      if (saved) {
+        const db3 = (await import('../db/database.js')).getDatabase();
+        db3.prepare(`UPDATE videos SET transcript_hu = :t, has_transcript = 1, updated_at = datetime('now') WHERE id = :id`).run({ t: transcriptHu || transcriptEn, id: video.id });
+      }
+    }
+
+    const cuesHu = await translateCues(transcriptCues, 200);
+    if (cuesHu.length) updateTranscriptCues(video.id, cuesHu);
+
+    res.json({ cues: cuesHu, cached: false });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * GET /api/archive
  * Visszaadja az összes manuálisan importált és archivált videót.
  *

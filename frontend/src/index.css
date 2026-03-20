@@ -532,8 +532,8 @@ body {
   background: #0f3460;
 }
 
-.detail__subtitle-bar__label {
-  font-size: 1rem;
+.detail__subtitle-bar__flag {
+  font-size: 1.1rem;
   flex-shrink: 0;
 }
 
@@ -543,6 +543,32 @@ body {
   line-height: 1.4;
   font-weight: 500;
   letter-spacing: 0.01em;
+}
+
+.detail__tts-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 0.3rem 0.75rem;
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.8);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.detail__tts-btn:hover {
+  background: rgba(255,255,255,0.22);
+  color: #fff;
+}
+
+.detail__tts-btn--on {
+  background: #34a853;
+  border-color: #34a853;
+  color: #fff;
 }
 
 .detail__subtitle-badge {
