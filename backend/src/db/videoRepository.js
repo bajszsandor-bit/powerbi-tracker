@@ -153,4 +153,16 @@ function getVideoById(videoId) {
   return db.prepare('SELECT * FROM videos WHERE id = :id').get({ id: videoId }) || null;
 }
 
-export { upsertVideos, getAllVideos, getVideoCount, updateTranscriptStatus, updateTranslations, updateDaxFunctions, getVideoById };
+/**
+ * Visszaadja a legutóbb frissített videó updated_at dátumát.
+ * Ha nincs egyetlen videó sem, null-t ad vissza.
+ *
+ * @returns {string | null} ISO dátum string vagy null
+ */
+function getLastUpdated() {
+  const db = getDatabase();
+  const row = db.prepare('SELECT MAX(updated_at) as last FROM videos').get();
+  return row?.last || null;
+}
+
+export { upsertVideos, getAllVideos, getVideoCount, updateTranscriptStatus, updateTranslations, updateDaxFunctions, getVideoById, getLastUpdated };

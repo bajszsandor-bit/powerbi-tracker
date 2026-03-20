@@ -42,13 +42,33 @@ test('GET /api/videos/:id 404-et ad ismeretlen videóra', async ({ request }) =>
   expect(response.status()).toBe(404);
 });
 
-test('GET /api/top10 visszaad transcriptAvailable és titleHu mezőt minden videónál', async ({ request }) => {
+test('GET /api/top10 visszaad { videos, lastUpdated } struktúrát', async ({ request }) => {
   const response = await request.get('http://localhost:3001/api/top10');
   expect(response.ok()).toBeTruthy();
   const body = await response.json();
-  expect(Array.isArray(body)).toBe(true);
-  for (const video of body) {
+  expect(Array.isArray(body.videos)).toBe(true);
+  expect('lastUpdated' in body).toBe(true);
+  for (const video of body.videos) {
     expect(typeof video.transcriptAvailable).toBe('boolean');
     expect('titleHu' in video).toBe(true);
   }
+});
+
+test('főoldal toolbar megjelenik (szűrő és frissítés gomb)', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('.filter-btn').first()).toBeVisible();
+  await expect(page.locator('.refresh-btn')).toBeVisible();
+});
+
+test('DAX szűrő toggle működik', async ({ page }) => {
+  await page.goto('/');
+  // Csak DAX videók szűrő megjelenik és kattintható
+  const daxBtn = page.locator('.filter-btn', { hasText: 'Csak DAX videók' });
+  await expect(daxBtn).toBeVisible();
+  await daxBtn.click();
+  await expect(daxBtn).toHaveClass(/filter-btn--active/);
+  // Vissza az összesre
+  const allBtn = page.locator('.filter-btn', { hasText: 'Összes' });
+  await allBtn.click();
+  await expect(allBtn).toHaveClass(/filter-btn--active/);
 });

@@ -6,6 +6,30 @@
 
 ## Legutóbbi állapot
 
+**Elkészült iteráció:** OUT-07
+
+**Dátum:** 2026-03-20
+
+**Elvégzett munka:**
+- `frontend/src/pages/Home.jsx` – teljes Top 10 főoldal: VideoCard, DaxBadge, szűrő toggle, spinner, üres/hibás/no-ytdlp állapot, `POST /api/refresh` integráció
+- `frontend/src/index.css` – video-card, dax-badge, filter-btn, refresh-btn, spinner, reszponzív grid stílusok
+- `backend/src/api/videos.js` – `GET /api/top10` visszaad `{ videos, lastUpdated }`, `POST /api/refresh` új endpoint
+- `backend/src/db/videoRepository.js` – `getLastUpdated()` függvény
+- `tests/e2e/home.spec.js` – 3 új teszt (top10 struktúra, toolbar, DAX szűrő toggle); összesen 7/7 e2e zöld
+- `.claude/launch.json` – Vite `--root frontend` argumens fix
+
+**Technikai döntések:**
+- `/api/top10` válasz struktúra megváltozott: `array` → `{ videos: [], lastUpdated: null }` (breaking change, de csak frontend fogyasztja)
+- Vite preview: `--root frontend` pozicionális argumens szükséges a helyes node_modules feloldáshoz
+
+**Ami nem készült el:** –
+
+**Következő javasolt iteráció:** OUT-08
+
+---
+
+## Előző iteráció (OUT-06)
+
 **Elkészült iteráció:** OUT-06
 
 **Dátum:** 2026-03-19

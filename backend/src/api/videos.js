@@ -4,9 +4,11 @@
  */
 
 import { Router } from 'express';
-import { getAllVideos, getVideoById } from '../db/videoRepository.js';
+import { getAllVideos, getVideoById, getLastUpdated } from '../db/videoRepository.js';
 import { getTop10 } from '../services/scoring.js';
 import { getDaxReference } from '../services/daxAnalyzer.js';
+import { checkYtdlpInstalled, collectVideos } from '../services/ytdlp.js';
+import { upsertVideos } from '../db/videoRepository.js';
 
 const router = Router();
 
@@ -25,7 +27,41 @@ router.get('/top10', (req, res, next) => {
       transcriptAvailable: Boolean(v.has_transcript),
       titleHu: v.title_hu || null,
     }));
-    res.json(top10);
+    const lastUpdated = getLastUpdated();
+    res.json({ videos: top10, lastUpdated });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/refresh
+ * Elindítja a videógyűjtést yt-dlp-vel és visszaadja az eredményt.
+ * Figyelmeztetés: ez a folyamat akár 1-2 percig is tarthat.
+ *
+ * @returns {{ collected: number, inserted: number, total: number, lastUpdated: string|null }}
+ */
+router.post('/refresh', async (req, res, next) => {
+  try {
+    const ytdlpStatus = await checkYtdlpInstalled();
+    if (!ytdlpStatus.installed) {
+      return res.status(503).json({
+        error: 'yt-dlp nincs telepítve',
+        message: ytdlpStatus.message,
+        helpUrl: ytdlpStatus.helpUrl,
+      });
+    }
+
+    const videos = await collectVideos();
+    const inserted = upsertVideos(videos);
+    const lastUpdated = getLastUpdated();
+
+    res.json({
+      collected: videos.length,
+      inserted,
+      total: getAllVideos().length,
+      lastUpdated,
+    });
   } catch (err) {
     next(err);
   }
