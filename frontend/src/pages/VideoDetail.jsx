@@ -3,7 +3,7 @@
  * @description Videó részletes oldal – automatikus magyar felirat + TTS szinkronhang.
  */
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 
 /** **félkövér** → <strong> konverzió egyszerű markdown-ból */
@@ -29,18 +29,30 @@ function VideoDetail() {
   const [status, setStatus] = useState('loading');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Felirat állapot
   const [cues, setCues] = useState([]);
-  const [subtitleStatus, setSubtitleStatus] = useState('idle'); // idle | loading | ready | unavailable
+  const [subtitleStatus, setSubtitleStatus] = useState('idle');
   const [currentSubtitle, setCurrentSubtitle] = useState('');
-
-  // TTS szinkronhang
   const [ttsEnabled, setTtsEnabled] = useState(false);
-  const lastSpokenCueRef = useRef(null);
 
-  // YouTube IFrame API
+  // Refs – ezeket nem kell újra-renderelni
+  const ttsEnabledRef = useRef(false);
+  const lastSpokenRef = useRef(null);
   const playerRef = useRef(null);
   const intervalRef = useRef(null);
+  const cuesRef = useRef([]);
+
+  // ttsEnabled → ref szinkronizálás
+  useEffect(() => {
+    ttsEnabledRef.current = ttsEnabled;
+    if (!ttsEnabled && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  }, [ttsEnabled]);
+
+  // cues → ref szinkronizálás
+  useEffect(() => {
+    cuesRef.current = cues;
+  }, [cues]);
 
   // Videó betöltése
   useEffect(() => {
@@ -55,7 +67,7 @@ function VideoDetail() {
         if (data) {
           setVideo(data);
           setStatus('ok');
-          if (data.transcriptCuesHu && data.transcriptCuesHu.length) {
+          if (data.transcriptCuesHu?.length) {
             setCues(data.transcriptCuesHu);
             setSubtitleStatus('ready');
           }
@@ -64,14 +76,14 @@ function VideoDetail() {
       .catch((err) => { setStatus('error'); setErrorMsg(err.message); });
   }, [id]);
 
-  // Auto felirat letöltés – ha nincs még cue
+  // Auto felirat fetch – ha nincs cue
   useEffect(() => {
     if (status !== 'ok' || cues.length > 0) return;
     setSubtitleStatus('loading');
     fetch(`/api/videos/${id}/subtitles`, { method: 'POST' })
       .then((res) => res.json())
       .then((data) => {
-        if (data.cues && data.cues.length) {
+        if (data.cues?.length) {
           setCues(data.cues);
           setSubtitleStatus('ready');
         } else {
@@ -81,49 +93,43 @@ function VideoDetail() {
       .catch(() => setSubtitleStatus('unavailable'));
   }, [status, id, cues.length]);
 
-  // YouTube IFrame API – szinkron felirat polling
-  const startPolling = useCallback((player) => {
-    intervalRef.current = setInterval(() => {
-      try {
-        const t = player.getCurrentTime();
-        const cue = cues.find((c) => t >= c.start && t < c.end);
-        const text = cue ? cue.text : '';
-        setCurrentSubtitle(text);
-
-        // TTS szinkronhang
-        if (ttsEnabled && cue && cue !== lastSpokenCueRef.current && window.speechSynthesis) {
-          lastSpokenCueRef.current = cue;
-          window.speechSynthesis.cancel();
-          const utter = new SpeechSynthesisUtterance(cue.text);
-          utter.lang = 'hu-HU';
-          utter.rate = 1.05;
-          window.speechSynthesis.speak(utter);
-        }
-      } catch {
-        // player nem kész
-      }
-    }, 200);
-  }, [cues, ttsEnabled]);
-
+  // YouTube IFrame API – csak egyszer hozza létre a playert, cues változásra
   useEffect(() => {
     if (!cues.length) return;
-    if (intervalRef.current) clearInterval(intervalRef.current);
+
+    function startPolling(player) {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = setInterval(() => {
+        try {
+          const t = player.getCurrentTime();
+          const cue = cuesRef.current.find((c) => t >= c.start && t < c.end);
+          setCurrentSubtitle(cue ? cue.text : '');
+
+          if (ttsEnabledRef.current && cue && cue !== lastSpokenRef.current && window.speechSynthesis) {
+            lastSpokenRef.current = cue;
+            window.speechSynthesis.cancel();
+            const utter = new SpeechSynthesisUtterance(cue.text);
+            utter.lang = 'hu-HU';
+            utter.rate = 1.05;
+            window.speechSynthesis.speak(utter);
+          }
+        } catch { /* player nem kész */ }
+      }, 300);
+    }
 
     function createPlayer() {
-      if (playerRef.current) {
-        try { playerRef.current.destroy(); } catch {}
-      }
+      try { playerRef.current?.destroy(); } catch {}
       playerRef.current = new window.YT.Player('yt-player', {
         events: { onReady(e) { startPolling(e.target); } },
       });
     }
 
-    if (window.YT && window.YT.Player) {
+    if (window.YT?.Player) {
       createPlayer();
     } else {
       const prev = window.onYouTubeIframeAPIReady;
       window.onYouTubeIframeAPIReady = () => { if (prev) prev(); createPlayer(); };
-      if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+      if (!document.querySelector('script[src*="iframe_api"]')) {
         const tag = document.createElement('script');
         tag.src = 'https://www.youtube.com/iframe_api';
         document.head.appendChild(tag);
@@ -132,17 +138,11 @@ function VideoDetail() {
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
+      try { playerRef.current?.destroy(); } catch {}
+      playerRef.current = null;
     };
-  }, [cues, startPolling]);
+  }, [cues]); // Csak egyszer – cues betöltésekor
 
-  // TTS ki-bekapcsol: ha kikapcsoljuk, leállítjuk a beszédet
-  useEffect(() => {
-    if (!ttsEnabled && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-  }, [ttsEnabled]);
-
-  // ── Állapotok ──
   if (status === 'loading') {
     return (
       <div className="detail-state">
@@ -184,6 +184,13 @@ function VideoDetail() {
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const iframeSrc = `https://www.youtube-nocookie.com/embed/${video.id}?enablejsapi=1&origin=${origin}`;
 
+  function subtitleText() {
+    if (subtitleStatus === 'loading') return '⏳ Magyar felirat betöltése...';
+    if (subtitleStatus === 'unavailable') return 'Ehhez a videóhoz nincs automatikus felirat';
+    if (!hasCues) return '⏳ Felirat előkészítése...';
+    return currentSubtitle || '▶ Indítsd el a videót a felirathoz';
+  }
+
   return (
     <article className="detail">
       <nav className="detail__nav">
@@ -203,23 +210,17 @@ function VideoDetail() {
           />
         </div>
 
-        {/* ── Felirat sáv (mindig látható, állapot szerint) ── */}
+        {/* ── Felirat sáv ── */}
         <div className={`detail__subtitle-bar${hasCues && currentSubtitle ? ' detail__subtitle-bar--active' : ''}`}>
           <span className="detail__subtitle-bar__flag">🇭🇺</span>
-          <p className="detail__subtitle-bar__text">
-            {subtitleStatus === 'loading' && !hasCues
-              ? '⏳ Magyar felirat betöltése...'
-              : subtitleStatus === 'unavailable'
-              ? 'Ehhez a videóhoz nincs automatikus felirat'
-              : currentSubtitle || (hasCues ? '—' : '⏳ Felirat előkészítése...')}
-          </p>
+          <p className="detail__subtitle-bar__text">{subtitleText()}</p>
           {hasCues && (
             <button
               className={`detail__tts-btn${ttsEnabled ? ' detail__tts-btn--on' : ''}`}
               onClick={() => setTtsEnabled((v) => !v)}
-              title={ttsEnabled ? 'Magyar szinkronhang kikapcsolása' : 'Magyar szinkronhang bekapcsolása'}
+              title={ttsEnabled ? 'Magyar felolvasás kikapcsolása' : 'Magyar felolvasás bekapcsolása'}
             >
-              {ttsEnabled ? '🔊 Szinkron BE' : '🔇 Szinkron KI'}
+              {ttsEnabled ? '🔊 Felolvasás BE' : '🔇 Felolvasás'}
             </button>
           )}
         </div>
@@ -257,7 +258,7 @@ function VideoDetail() {
       )}
 
       {/* ── DAX függvények ── */}
-      {video.daxFunctions && video.daxFunctions.length > 0 && (
+      {video.daxFunctions?.length > 0 && (
         <section className="detail__section">
           <h3 className="detail__section-title">
             📐 DAX függvények a videóban ({video.daxFunctions.length})
