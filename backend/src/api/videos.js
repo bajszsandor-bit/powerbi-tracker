@@ -4,11 +4,12 @@
  */
 
 import { Router } from 'express';
-import { getAllVideos, getVideoById, getLastUpdated } from '../db/videoRepository.js';
+import { getAllVideos, getVideoById, getLastUpdated, updateDaxFunctions, updateTranslations } from '../db/videoRepository.js';
 import { getTop10 } from '../services/scoring.js';
-import { getDaxReference } from '../services/daxAnalyzer.js';
+import { getDaxReference, extractDaxFunctions } from '../services/daxAnalyzer.js';
 import { checkYtdlpInstalled, collectVideos } from '../services/ytdlp.js';
 import { upsertVideos } from '../db/videoRepository.js';
+import { translateVideo } from '../services/translation.js';
 
 const router = Router();
 
@@ -54,14 +55,40 @@ router.post('/refresh', async (req, res, next) => {
 
     const videos = await collectVideos();
     const inserted = upsertVideos(videos);
-    const lastUpdated = getLastUpdated();
 
+    // Minden frissen gyűjtött videó elemzése háttérben (nem blokkolja a választ)
     res.json({
       collected: videos.length,
       inserted,
       total: getAllVideos().length,
-      lastUpdated,
+      lastUpdated: getLastUpdated(),
     });
+
+    // DAX elemzés + magyar fordítás háttérben
+    (async () => {
+      for (const video of videos) {
+        try {
+          // DAX függvények kinyerése a cím + leírásból
+          const text = `${video.title || ''} ${video.description || ''}`;
+          const daxFns = extractDaxFunctions(text);
+          updateDaxFunctions(video.id, daxFns);
+
+          // Magyar fordítás (cím + leírás)
+          const saved = getVideoById(video.id);
+          if (saved && !saved.title_hu) {
+            const { titleHu, descriptionHu } = await translateVideo({
+              id: video.id,
+              title: video.title,
+              description: video.description,
+              title_hu: null,
+            });
+            updateTranslations(video.id, { titleHu, descriptionHu, transcriptHu: null });
+          }
+        } catch {
+          // egyedi hiba nem állítja le a többi elemzését
+        }
+      }
+    })();
   } catch (err) {
     next(err);
   }
