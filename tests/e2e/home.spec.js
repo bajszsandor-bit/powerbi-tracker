@@ -28,3 +28,27 @@ test('GET /api/health visszaad { status: "ok" }', async ({ request }) => {
   const body = await response.json();
   expect(body).toEqual({ status: 'ok' });
 });
+
+test('GET /api/check-ytdlp válaszol és tartalmaz installed mezőt', async ({ request }) => {
+  const response = await request.get('http://localhost:3001/api/check-ytdlp');
+  expect(response.ok()).toBeTruthy();
+  const body = await response.json();
+  expect(typeof body.installed).toBe('boolean');
+  expect(body.helpUrl).toContain('github.com/yt-dlp');
+});
+
+test('GET /api/videos/:id 404-et ad ismeretlen videóra', async ({ request }) => {
+  const response = await request.get('http://localhost:3001/api/videos/ismeretlen-id-xyz');
+  expect(response.status()).toBe(404);
+});
+
+test('GET /api/top10 visszaad transcriptAvailable és titleHu mezőt minden videónál', async ({ request }) => {
+  const response = await request.get('http://localhost:3001/api/top10');
+  expect(response.ok()).toBeTruthy();
+  const body = await response.json();
+  expect(Array.isArray(body)).toBe(true);
+  for (const video of body) {
+    expect(typeof video.transcriptAvailable).toBe('boolean');
+    expect('titleHu' in video).toBe(true);
+  }
+});

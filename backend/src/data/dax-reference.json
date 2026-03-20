@@ -1,0 +1,238 @@
+{
+  "CALCULATE": {
+    "description": "Evaluates an expression in a modified filter context.",
+    "example": "CALCULATE(SUM(Sales[Amount]), Sales[Region] = \"North\")"
+  },
+  "CALCULATETABLE": {
+    "description": "Returns a table of values as a result of applying a filter.",
+    "example": "CALCULATETABLE(Sales, Sales[Year] = 2024)"
+  },
+  "SUM": {
+    "description": "Adds all the numbers in a column.",
+    "example": "SUM(Sales[Amount])"
+  },
+  "SUMX": {
+    "description": "Returns the sum of an expression evaluated for each row in a table.",
+    "example": "SUMX(Sales, Sales[Quantity] * Sales[Price])"
+  },
+  "COUNT": {
+    "description": "Counts the number of numeric values in a column.",
+    "example": "COUNT(Sales[OrderID])"
+  },
+  "COUNTA": {
+    "description": "Counts the number of non-blank values in a column.",
+    "example": "COUNTA(Sales[CustomerName])"
+  },
+  "COUNTX": {
+    "description": "Counts the number of rows that contain a non-blank result from an expression.",
+    "example": "COUNTX(Sales, IF(Sales[Amount] > 100, 1))"
+  },
+  "COUNTROWS": {
+    "description": "Counts the number of rows in a table.",
+    "example": "COUNTROWS(Sales)"
+  },
+  "COUNTBLANK": {
+    "description": "Counts the number of blank cells in a column.",
+    "example": "COUNTBLANK(Sales[Region])"
+  },
+  "DISTINCTCOUNT": {
+    "description": "Counts the number of distinct values in a column.",
+    "example": "DISTINCTCOUNT(Sales[CustomerID])"
+  },
+  "AVERAGE": {
+    "description": "Returns the average (arithmetic mean) of all numbers in a column.",
+    "example": "AVERAGE(Sales[Amount])"
+  },
+  "AVERAGEX": {
+    "description": "Calculates the average of an expression evaluated for each row in a table.",
+    "example": "AVERAGEX(Sales, Sales[Quantity] * Sales[Price])"
+  },
+  "MIN": {
+    "description": "Returns the smallest numeric value in a column.",
+    "example": "MIN(Sales[Amount])"
+  },
+  "MINX": {
+    "description": "Returns the smallest value from an expression evaluated over a table.",
+    "example": "MINX(Sales, Sales[Amount])"
+  },
+  "MAX": {
+    "description": "Returns the largest numeric value in a column.",
+    "example": "MAX(Sales[Amount])"
+  },
+  "MAXX": {
+    "description": "Returns the largest value from an expression evaluated over a table.",
+    "example": "MAXX(Sales, Sales[Amount])"
+  },
+  "FILTER": {
+    "description": "Returns a table that represents a subset of another table or expression.",
+    "example": "FILTER(Sales, Sales[Amount] > 1000)"
+  },
+  "ALL": {
+    "description": "Returns all the rows in a table, ignoring any filters.",
+    "example": "ALL(Sales[Region])"
+  },
+  "ALLEXCEPT": {
+    "description": "Removes all context filters except filters applied to specified columns.",
+    "example": "ALLEXCEPT(Sales, Sales[Region])"
+  },
+  "ALLSELECTED": {
+    "description": "Returns all the rows in a table considering only the filters applied outside the current context.",
+    "example": "ALLSELECTED(Sales[Region])"
+  },
+  "VALUES": {
+    "description": "Returns a one-column table containing the distinct values from a column.",
+    "example": "VALUES(Sales[Region])"
+  },
+  "DISTINCT": {
+    "description": "Returns a one-column table of distinct values from a column or expression.",
+    "example": "DISTINCT(Sales[CustomerID])"
+  },
+  "RELATED": {
+    "description": "Returns a related value from another table using the relationship.",
+    "example": "RELATED(Customer[Country])"
+  },
+  "RELATEDTABLE": {
+    "description": "Returns all rows from a related table that are related to the current row.",
+    "example": "RELATEDTABLE(Sales)"
+  },
+  "IF": {
+    "description": "Checks a condition and returns one value when true, another when false.",
+    "example": "IF(Sales[Amount] > 1000, \"High\", \"Low\")"
+  },
+  "IFERROR": {
+    "description": "Returns a value you specify if an expression evaluates to an error.",
+    "example": "IFERROR(Sales[Amount] / Sales[Quantity], 0)"
+  },
+  "SWITCH": {
+    "description": "Evaluates an expression against a list of values and returns the result of the first matching expression.",
+    "example": "SWITCH(Sales[Region], \"North\", 1, \"South\", 2, 0)"
+  },
+  "DIVIDE": {
+    "description": "Performs division and returns an alternate result or BLANK on division by zero.",
+    "example": "DIVIDE(Sales[Profit], Sales[Revenue], 0)"
+  },
+  "RANKX": {
+    "description": "Returns the ranking of a number in a list of numbers for each row in a table.",
+    "example": "RANKX(ALL(Products), [Total Sales])"
+  },
+  "TOPN": {
+    "description": "Returns the top N rows of a specified table.",
+    "example": "TOPN(10, Sales, Sales[Amount], DESC)"
+  },
+  "EARLIER": {
+    "description": "Returns the current value of a column in an outer evaluation pass of the given column.",
+    "example": "EARLIER(Sales[Amount])"
+  },
+  "HASONEVALUE": {
+    "description": "Returns TRUE when the context for a column has been filtered down to one distinct value only.",
+    "example": "IF(HASONEVALUE(Sales[Region]), VALUES(Sales[Region]), \"Multiple\")"
+  },
+  "SELECTEDVALUE": {
+    "description": "Returns the value when the context for a column has been filtered to one distinct value only.",
+    "example": "SELECTEDVALUE(Sales[Region], \"All Regions\")"
+  },
+  "FIRSTNONBLANK": {
+    "description": "Returns the first value in a column for which the expression is not blank.",
+    "example": "FIRSTNONBLANK(Sales[Date], Sales[Amount])"
+  },
+  "LASTNONBLANK": {
+    "description": "Returns the last value in a column for which the expression is not blank.",
+    "example": "LASTNONBLANK(Sales[Date], Sales[Amount])"
+  },
+  "DATEADD": {
+    "description": "Returns a table with a column of dates shifted in time by a specified number of intervals.",
+    "example": "CALCULATE([Total Sales], DATEADD(Date[Date], -1, YEAR))"
+  },
+  "DATESYTD": {
+    "description": "Returns a set of dates in the year up to the last date in the filter context.",
+    "example": "CALCULATE(SUM(Sales[Amount]), DATESYTD(Date[Date]))"
+  },
+  "DATESMTD": {
+    "description": "Returns a set of dates in the month up to the last date in the filter context.",
+    "example": "CALCULATE(SUM(Sales[Amount]), DATESMTD(Date[Date]))"
+  },
+  "DATESQTD": {
+    "description": "Returns a set of dates in the quarter up to the last date in the filter context.",
+    "example": "CALCULATE(SUM(Sales[Amount]), DATESQTD(Date[Date]))"
+  },
+  "SAMEPERIODLASTYEAR": {
+    "description": "Returns a set of dates from the previous year corresponding to the current context.",
+    "example": "CALCULATE([Total Sales], SAMEPERIODLASTYEAR(Date[Date]))"
+  },
+  "TOTALYTD": {
+    "description": "Evaluates the year-to-date value of an expression.",
+    "example": "TOTALYTD(SUM(Sales[Amount]), Date[Date])"
+  },
+  "TOTALMTD": {
+    "description": "Evaluates the month-to-date value of an expression.",
+    "example": "TOTALMTD(SUM(Sales[Amount]), Date[Date])"
+  },
+  "PREVIOUSYEAR": {
+    "description": "Returns all dates from the previous year in the current filter context.",
+    "example": "CALCULATE([Total Sales], PREVIOUSYEAR(Date[Date]))"
+  },
+  "PREVIOUSMONTH": {
+    "description": "Returns all dates from the previous month in the current filter context.",
+    "example": "CALCULATE([Total Sales], PREVIOUSMONTH(Date[Date]))"
+  },
+  "PARALLELPERIOD": {
+    "description": "Returns a table with a parallel period shifted by a number of intervals.",
+    "example": "CALCULATE([Total Sales], PARALLELPERIOD(Date[Date], -1, YEAR))"
+  },
+  "USERELATIONSHIP": {
+    "description": "Specifies the relationship to use in a specific calculation.",
+    "example": "CALCULATE([Total Sales], USERELATIONSHIP(Sales[ShipDate], Date[Date]))"
+  },
+  "VAR": {
+    "description": "Stores the result of an expression as a named variable (used with RETURN).",
+    "example": "VAR TotalSales = SUM(Sales[Amount]) RETURN TotalSales * 1.1"
+  },
+  "RETURN": {
+    "description": "Returns the result of a VAR expression.",
+    "example": "VAR x = 10 RETURN x * 2"
+  },
+  "CONCATENATE": {
+    "description": "Joins two text strings into one.",
+    "example": "CONCATENATE(Customer[FirstName], \" \", Customer[LastName])"
+  },
+  "CONCATENATEX": {
+    "description": "Concatenates the result of an expression evaluated for each row in a table.",
+    "example": "CONCATENATEX(Products, Products[Name], \", \")"
+  },
+  "FORMAT": {
+    "description": "Converts a value to text in the specified number format.",
+    "example": "FORMAT(Sales[Amount], \"#,##0.00\")"
+  },
+  "BLANK": {
+    "description": "Returns a blank value.",
+    "example": "IF(Sales[Amount] = 0, BLANK(), Sales[Amount])"
+  },
+  "ISBLANK": {
+    "description": "Checks whether a value is blank, and returns TRUE or FALSE.",
+    "example": "ISBLANK(Sales[Region])"
+  },
+  "LOOKUPVALUE": {
+    "description": "Returns the value from a column for a row that meets specified criteria.",
+    "example": "LOOKUPVALUE(Products[Price], Products[ID], Sales[ProductID])"
+  },
+  "GENERATE": {
+    "description": "Returns a table with the Cartesian product of each row in table1 and the table from evaluating table2 expression.",
+    "example": "GENERATE(Products, FILTER(Sales, Sales[ProductID] = Products[ID]))"
+  },
+  "CROSSJOIN": {
+    "description": "Returns a table that is the cross join of the specified tables.",
+    "example": "CROSSJOIN(Products, Regions)"
+  },
+  "TREATAS": {
+    "description": "Applies the values of a table as filters on columns from an unrelated table.",
+    "example": "TREATAS(VALUES(Sales[ProductID]), Products[ID])"
+  },
+  "CONTAINS": {
+    "description": "Returns TRUE if a table contains a row with the specified column values.",
+    "example": "CONTAINS(Products, Products[Category], \"Electronics\")"
+  },
+  "KEEPFILTERS": {
+    "description": "Modifies how filters are applied while evaluating a CALCULATE function.",
+    "example": "CALCULATE([Total Sales], KEEPFILTERS(Sales[Region] = \"North\"))"
+  }
+}
