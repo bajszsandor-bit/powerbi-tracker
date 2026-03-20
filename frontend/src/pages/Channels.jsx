@@ -1,128 +1,176 @@
 /**
  * @file Channels.jsx
- * @description Top 10 Power BI YouTube csatorna – statikus kurátor lista
- * a legjobb oktatócsatornákról leírással és közvetlen linkekkel.
+ * @description Top YouTube csatornák két szekcióban:
+ * Power BI csatornák és Excel csatornák (forrás: YouTube_Csatornak.xlsx)
  */
 
-const CHANNELS = [
+const POWERBI_CHANNELS = [
   {
     rank: 1,
-    name: 'Guy in a Cube',
-    handle: '@GuyInACube',
-    url: 'https://www.youtube.com/@GuyInACube/videos',
-    avatar: '🎲',
-    specialty: 'Általános Power BI, tipptár, heti újdonságok',
-    description:
-      'Adam Saxton és Patrick LeBlanc (Microsoft MVP) csatornája. Hetente friss videók Power BI újdonságokról, tippekről, DAX-ról és Power Query-ről. Kötelező követés mindenkinek.',
-    level: 'Minden szint',
+    name: 'How to Power BI',
+    handle: '@HowtoPowerBI',
+    url: 'https://www.youtube.com/@HowtoPowerBI/videos',
+    avatar: '📖',
+    specialty: 'Lépésről lépésre Power BI oktatás',
+    description: 'Jól strukturált sorozatok kezdőknek és középhaladóknak. Vizualizáció, DAX alapok, adatkapcsolatok témánként.',
+    level: 'Kezdő',
     language: 'Angol',
   },
   {
     rank: 2,
-    name: 'SQLBI',
-    handle: '@SQLBI',
-    url: 'https://www.youtube.com/@SQLBI/videos',
-    avatar: '📊',
-    specialty: 'DAX, adatmodellezés – mélységi oktatás',
-    description:
-      'Marco Russo és Alberto Ferrari a világ legelismertebb DAX szakértői. Ha komolyan veszed a DAX-ot és az adatmodellezést, ez a csatorna elengedhetetlen. Részletes, tudományos igényű tartalom.',
-    level: 'Haladó',
-    language: 'Angol',
-  },
-  {
-    rank: 3,
     name: 'Microsoft Power BI',
     handle: '@MicrosoftPowerBI',
     url: 'https://www.youtube.com/@MicrosoftPowerBI/videos',
     avatar: '🏢',
     specialty: 'Hivatalos bejelentések, új funkciók demói',
-    description:
-      'A Microsoft hivatalos Power BI csatornája. Minden havi kiadáshoz bemutató videó, konferencia előadások és termékújdonságok. Érdemes feliratkozni az aktuális hírekért.',
+    description: 'A Microsoft hivatalos Power BI csatornája. Minden havi kiadáshoz bemutató videó, konferencia előadások és termékújdonságok.',
     level: 'Minden szint',
     language: 'Angol',
   },
   {
-    rank: 4,
-    name: 'Pragmatic Works',
-    handle: '@PragmaticWorks',
-    url: 'https://www.youtube.com/@PragmaticWorks/videos',
-    avatar: '⚙️',
-    specialty: 'Power BI, Power Query, adatintegráció',
-    description:
-      'Vállalati szintű Power BI és adatplatform oktatás. Ingyenes bootcamp-ek, teljes kurzusok, Power Query deep dive-ok. Sűrű tartalom-feltöltés.',
-    level: 'Kezdő–Középhaladó',
-    language: 'Angol',
-  },
-  {
-    rank: 5,
-    name: 'Chandoo',
-    handle: '@chandoo_',
-    url: 'https://www.youtube.com/@chandoo_/videos',
-    avatar: '✨',
-    specialty: 'Excel, Power BI, adatvizualizáció',
-    description:
-      'Chandoo.org tulajdonosa. Kiválóan magyaráz komplex témákat egyszerűen. Különösen erős a vizualizációs tippekben és az Excel → Power BI átmenetnél.',
-    level: 'Kezdő–Középhaladó',
-    language: 'Angol',
-  },
-  {
-    rank: 6,
-    name: 'How to Power BI',
-    handle: '@HowtoPowerBI',
-    url: 'https://www.youtube.com/@HowtoPowerBI/videos',
-    avatar: '📖',
-    specialty: 'Kezdőknek szánt Power BI sorozatok',
-    description:
-      'Lépésről lépésre felépített oktatási sorozatok kezdőknek és középhaladóknak. Jól strukturált playlist-ek témánként: vizualizáció, DAX alapok, adatkapcsolatok.',
-    level: 'Kezdő',
-    language: 'Angol',
-  },
-  {
-    rank: 7,
-    name: 'Curbal',
-    handle: '@Curbal',
-    url: 'https://www.youtube.com/@Curbal/videos',
-    avatar: '🔵',
-    specialty: 'DAX Fridays sorozat, Power Query',
-    description:
-      'Ruth Pozuelo Martinez "DAX Fridays" sorozata legendás – hetente egy DAX függvény részletes bemutatása. Több száz epizód, kiváló referencia-anyag.',
+    rank: 3,
+    name: 'Power BI Tips',
+    handle: '@PowerBITips',
+    url: 'https://www.youtube.com/@PowerBITips/videos',
+    avatar: '💡',
+    specialty: 'Power BI tippek és praktikus megoldások',
+    description: 'Gyors, praktikus Power BI tippek és trükkök. Vizualizációs megoldások, DAX minták, dashboard best practices.',
     level: 'Középhaladó',
     language: 'Angol',
   },
   {
+    rank: 4,
+    name: 'DFW Power BI User Group',
+    handle: '@dfwpowerbiusergroup1374',
+    url: 'https://www.youtube.com/@dfwpowerbiusergroup1374/videos',
+    avatar: '👥',
+    specialty: 'Közösségi meetup előadások',
+    description: 'Dallas-Fort Worth Power BI felhasználói csoport meetup felvételei. Valós üzleti esetek és közösségi tudásmegosztás.',
+    level: 'Középhaladó–Haladó',
+    language: 'Angol',
+  },
+  {
+    rank: 5,
+    name: 'Next Level Power BI Reports',
+    handle: '@nextlevelpowerbireports',
+    url: 'https://www.youtube.com/@nextlevelpowerbireports/videos',
+    avatar: '🚀',
+    specialty: 'Prémium Power BI riport design',
+    description: 'Profi Power BI riportok és dashboardok készítése. Haladó vizualizációs technikák, egyedi designok.',
+    level: 'Haladó',
+    language: 'Angol',
+  },
+];
+
+const EXCEL_CHANNELS = [
+  {
+    rank: 1,
+    name: 'Dataképzés | ProfiExcel | Csáki Dávid',
+    handle: '@datakepzes',
+    url: 'https://www.youtube.com/@datakepzes/videos',
+    avatar: '🇭🇺',
+    specialty: 'Magyar Excel és adat oktatás',
+    description: 'Magyar nyelvű Excel és adatelemzés oktatás Csáki Dávidtól. Érthetően, praktikusan – kezdőktől a profikig.',
+    level: 'Minden szint',
+    language: 'Magyar',
+  },
+  {
+    rank: 2,
+    name: 'Excel Cápa',
+    handle: '@excelcapa5191',
+    url: 'https://www.youtube.com/@excelcapa5191/videos',
+    avatar: '🦈',
+    specialty: 'Magyar Excel trükkök és tippek',
+    description: 'Magyar nyelvű Excel tartalom – praktikus tippek, trükkök, és megoldások a mindennapi irodai munkához.',
+    level: 'Kezdő–Középhaladó',
+    language: 'Magyar',
+  },
+  {
+    rank: 3,
+    name: 'ExcelTitok',
+    handle: '@ExcelTitok',
+    url: 'https://www.youtube.com/@ExcelTitok/videos',
+    avatar: '🔐',
+    specialty: 'Excel titkok és haladó funkciók',
+    description: 'Magyar nyelvű Excel oktatás – kevésbé ismert funkciók, rejtett lehetőségek és profi megoldások.',
+    level: 'Középhaladó',
+    language: 'Magyar',
+  },
+  {
+    rank: 4,
+    name: 'Excelneked',
+    handle: '@Excelneked',
+    url: 'https://www.youtube.com/@Excelneked/videos',
+    avatar: '📊',
+    specialty: 'Excel a mindennapi munkában',
+    description: 'Magyar Excel oktatás mindennapi problémákra. Formulas, táblázatok, pivot, és praktikus munkamódszerek.',
+    level: 'Kezdő',
+    language: 'Magyar',
+  },
+  {
+    rank: 5,
+    name: 'How to Excel',
+    handle: '@HowToExcelBlog',
+    url: 'https://www.youtube.com/@HowToExcelBlog/videos',
+    avatar: '📘',
+    specialty: 'Excel blog és videó oktatás',
+    description: 'How To Excel Blog – átfogó Excel oktatás képletektől a Power Query-ig. Tiszta, jól strukturált tartalom.',
+    level: 'Minden szint',
+    language: 'Angol',
+  },
+  {
+    rank: 6,
+    name: 'Excel Visual',
+    handle: '@ExcelVisual',
+    url: 'https://www.youtube.com/@ExcelVisual/videos',
+    avatar: '🎨',
+    specialty: 'Excel vizualizáció és diagramok',
+    description: 'Vizuálisan vonzó Excel grafikonok és dashboardok készítése. Adatvizualizáció és design tippek.',
+    level: 'Középhaladó',
+    language: 'Angol',
+  },
+  {
+    rank: 7,
+    name: 'Ms Excel',
+    handle: '@MsExcels',
+    url: 'https://www.youtube.com/@MsExcels/videos',
+    avatar: '💚',
+    specialty: 'Microsoft Excel funkciók bemutatása',
+    description: 'Excel függvények, képletek és funkciók részletes bemutatása. Rövid, tömör oktatóvideók.',
+    level: 'Kezdő–Középhaladó',
+    language: 'Angol',
+  },
+  {
     rank: 8,
-    name: 'Enterprise DNA',
-    handle: '@EnterpriseDNA',
-    url: 'https://www.youtube.com/@EnterpriseDNA/videos',
-    avatar: '🧬',
-    specialty: 'Üzleti riportok, haladó DAX, dashboardok',
-    description:
-      'Sam McKay és csapata üzleti szempontból közelíti meg a Power BI-t. Valós üzleti eseteket mutatnak be, haladó DAX mintákkal és profi dashboard designnal.',
+    name: 'The Excel Hub',
+    handle: '@theexcelhub',
+    url: 'https://www.youtube.com/@theexcelhub/videos',
+    avatar: '🔷',
+    specialty: 'Excel és VBA oktatás',
+    description: 'Excel funkciók és VBA automatizáció. Haladó képletek, makrók és munkafolyamat-optimalizáció.',
     level: 'Középhaladó–Haladó',
     language: 'Angol',
   },
   {
     rank: 9,
-    name: 'Avi Singh – PowerBIPro',
-    handle: '@AviSinghPowerBIPro',
-    url: 'https://www.youtube.com/@AviSinghPowerBIPro/videos',
-    avatar: '🏆',
-    specialty: 'Power BI best practices, career advice',
-    description:
-      'Avi Singh Microsoft MVP. Kiváló tippek a Power BI legjobb gyakorlatairól, karrierépítésről BI területen, és valós vállalati megoldásokról.',
+    name: 'MyExcelOnline.com',
+    handle: '@MyExcelOnline',
+    url: 'https://www.youtube.com/@MyExcelOnline/videos',
+    avatar: '🌐',
+    specialty: 'Online Excel kurzusok és tippek',
+    description: 'John Michaloudis Excel oktatási platformja. Napi tippek, trükkök és teljes kurzusok kezdőktől haladókig.',
     level: 'Minden szint',
     language: 'Angol',
   },
   {
     rank: 10,
-    name: 'Goodly',
-    handle: '@GoodlyCo',
-    url: 'https://www.youtube.com/@GoodlyCo/videos',
-    avatar: '💡',
-    specialty: 'Power BI vizualizáció, interaktív riportok',
-    description:
-      'Wyn Hopkins fókusza a szép és interaktív Power BI riportok készítése. Vizualizációs tippek, egyéni vizualizációk, és kreatív megoldások az adatok bemutatására.',
-    level: 'Középhaladó',
+    name: 'MrExcel.com',
+    handle: '@MrXL',
+    url: 'https://www.youtube.com/@MrXL/videos',
+    avatar: '👑',
+    specialty: 'Excel legendák – Bill Jelen csatornája',
+    description: 'Bill Jelen (MrExcel) – az egyik legtekintélyesebb Excel oktató. Napi tippek, trükkök, és évtizedes tapasztalat.',
+    level: 'Minden szint',
     language: 'Angol',
   },
 ];
@@ -136,11 +184,6 @@ const LEVEL_COLOR = {
   'Minden szint': 'channel-card__level--all',
 };
 
-/**
- * Egy csatorna kártyát renderel.
- *
- * @param {{ ch: object }} props
- */
 function ChannelCard({ ch }) {
   return (
     <article className="channel-card">
@@ -150,6 +193,9 @@ function ChannelCard({ ch }) {
         <div className="channel-card__header">
           <h3 className="channel-card__name">{ch.name}</h3>
           <span className="channel-card__handle">{ch.handle}</span>
+          {ch.language === 'Magyar' && (
+            <span className="channel-card__lang-badge">🇭🇺 Magyar</span>
+          )}
         </div>
         <p className="channel-card__specialty">{ch.specialty}</p>
         <p className="channel-card__desc">{ch.description}</p>
@@ -171,25 +217,38 @@ function ChannelCard({ ch }) {
   );
 }
 
-/**
- * Channels oldal – Top 10 Power BI YouTube csatorna.
- *
- * @returns {JSX.Element}
- */
+function ChannelSection({ title, icon, channels }) {
+  return (
+    <section className="channels__section">
+      <h3 className="channels__section-title">{icon} {title}</h3>
+      <div className="channels__grid">
+        {channels.map((ch) => (
+          <ChannelCard key={ch.handle} ch={ch} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function Channels() {
   return (
     <main className="channels">
       <div className="channels__header">
-        <h2 className="channels__title">Top 10 Power BI YouTube Csatorna</h2>
+        <h2 className="channels__title">YouTube Csatornák</h2>
         <p className="channels__subtitle">
-          A legjobb ingyenes Power BI oktatócsatornák – kezdőktől a haladókig
+          A legjobb Power BI és Excel oktatócsatornák – minden videó friss, legutóbbi feltöltés
         </p>
       </div>
-      <div className="channels__grid">
-        {CHANNELS.map((ch) => (
-          <ChannelCard key={ch.handle} ch={ch} />
-        ))}
-      </div>
+      <ChannelSection
+        title="Power BI csatornák"
+        icon="📊"
+        channels={POWERBI_CHANNELS}
+      />
+      <ChannelSection
+        title="Excel csatornák"
+        icon="🟢"
+        channels={EXCEL_CHANNELS}
+      />
     </main>
   );
 }

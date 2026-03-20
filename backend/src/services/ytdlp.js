@@ -13,18 +13,27 @@ const execFileAsync = promisify(execFile);
 const YTDLP_TIMEOUT_MS = 60_000;
 const YTDLP_DELAY_MS = 2_000;
 
-const SEARCH_QUERIES = [
-  'ytsearch20:Power BI DAX tutorial',
-  'ytsearch20:Power BI tips tricks',
-  'ytsearch20:Power BI beginner 2024',
-  'ytsearch20:Power BI measures calculated columns',
-];
+const SEARCH_QUERIES = [];
 
+// Csatornák az Excel fájlból (Excel csatornák + Power BI csatornák)
 const CHANNEL_URLS = [
-  'https://www.youtube.com/@GuyInACube/videos',
-  'https://www.youtube.com/@SQLBI/videos',
-  'https://www.youtube.com/@PragmaticWorks/videos',
+  // Power BI csatornák
+  'https://www.youtube.com/@HowtoPowerBI/videos',
   'https://www.youtube.com/@MicrosoftPowerBI/videos',
+  'https://www.youtube.com/@PowerBITips/videos',
+  'https://www.youtube.com/@dfwpowerbiusergroup1374/videos',
+  'https://www.youtube.com/@nextlevelpowerbireports/videos',
+  // Excel csatornák
+  'https://www.youtube.com/@datakepzes/videos',
+  'https://www.youtube.com/@HowToExcelBlog/videos',
+  'https://www.youtube.com/@ExcelVisual/videos',
+  'https://www.youtube.com/@MsExcels/videos',
+  'https://www.youtube.com/@theexcelhub/videos',
+  'https://www.youtube.com/@MyExcelOnline/videos',
+  'https://www.youtube.com/@MrXL/videos',
+  'https://www.youtube.com/@excelcapa5191/videos',
+  'https://www.youtube.com/@ExcelTitok/videos',
+  'https://www.youtube.com/@Excelneked/videos',
 ];
 
 /**
@@ -143,9 +152,9 @@ async function collectVideos() {
     try {
       let args;
       if (source.type === 'search') {
-        args = [source.query, '--dump-json', '--no-download', '--playlist-end', '20'];
+        args = [source.query, '--dump-json', '--no-download', '--playlist-end', '5'];
       } else {
-        args = [source.url, '--dump-json', '--no-download', '--playlist-end', '10'];
+        args = [source.url, '--dump-json', '--no-download', '--playlist-end', '1'];
       }
 
       const raw = await runYtdlp(args);

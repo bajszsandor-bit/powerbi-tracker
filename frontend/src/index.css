@@ -613,6 +613,19 @@ body {
   color: #777;
 }
 
+.channels__section {
+  margin-bottom: 2.5rem;
+}
+
+.channels__section-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e8eaed;
+}
+
 .channels__grid {
   display: flex;
   flex-direction: column;
@@ -704,6 +717,15 @@ body {
 .channel-card__level--intermediate  { background: #fff8e1; color: #856404; }
 .channel-card__level--advanced      { background: #fce4ec; color: #ad1457; }
 .channel-card__level--all           { background: #e8eaed; color: #444; }
+
+.channel-card__lang-badge {
+  font-size: 0.72rem;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+}
 
 .channel-card__link {
   font-size: 0.82rem;
