@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 
 /**
  * Egy DAX függvény badge-et renderel.
@@ -30,37 +31,41 @@ function VideoCard({ video }) {
   const displayTitle = video.titleHu || video.title || '(Cím nélkül)';
   const score = typeof video.score === 'number' ? Math.round(video.score) : null;
 
+  const ytUrl = video.video_url || `https://www.youtube.com/watch?v=${video.id}`;
+
   return (
     <article className="video-card">
-      {video.thumbnail_url && (
-        <a
-          href={video.video_url || `https://www.youtube.com/watch?v=${video.id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="video-card__thumb-link"
-        >
+      <Link to={`/video/${video.id}`} className="video-card__thumb-link">
+        {video.thumbnail_url ? (
           <img
             src={video.thumbnail_url}
             alt={displayTitle}
             className="video-card__thumb"
             loading="lazy"
           />
-        </a>
-      )}
+        ) : (
+          <div className="video-card__thumb-placeholder">▶</div>
+        )}
+      </Link>
       <div className="video-card__body">
-        <a
-          href={video.video_url || `https://www.youtube.com/watch?v=${video.id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="video-card__title"
-        >
+        <Link to={`/video/${video.id}`} className="video-card__title">
           {displayTitle}
-        </a>
+        </Link>
         <p className="video-card__channel">{video.channel_title || '—'}</p>
         <div className="video-card__meta">
-          {score !== null && (
+          {score !== null && score > 0 && (
             <span className="video-card__score" title="Relevancia pontszám">
               ⭐ {score} pont
+            </span>
+          )}
+          {video.view_count > 0 && (
+            <span className="video-card__views">
+              👁 {Number(video.view_count).toLocaleString('hu-HU')}
+            </span>
+          )}
+          {video.published_at && (
+            <span className="video-card__date">
+              {new Date(video.published_at).toLocaleDateString('hu-HU', { year: 'numeric', month: 'short', day: 'numeric' })}
             </span>
           )}
           {video.transcriptAvailable && (
@@ -79,6 +84,16 @@ function VideoCard({ video }) {
             )}
           </div>
         )}
+        <a
+          href={ytUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="video-card__yt-link"
+          title="Megnyitás YouTube-on"
+          onClick={(e) => e.stopPropagation()}
+        >
+          ▶ YouTube
+        </a>
       </div>
     </article>
   );

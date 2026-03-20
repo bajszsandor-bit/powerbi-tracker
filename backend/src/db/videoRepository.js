@@ -30,14 +30,15 @@ function upsertVideos(videos) {
   const db = getDatabase();
 
   const insert = db.prepare(`
-    INSERT OR IGNORE INTO videos (
+    INSERT OR REPLACE INTO videos (
       id, title, description, channel_title, published_at,
       view_count, like_count, thumbnail_url, video_url,
       created_at, updated_at
     ) VALUES (
       :id, :title, :description, :channelTitle, :publishedAt,
       :viewCount, :likeCount, :thumbnailUrl, :videoUrl,
-      datetime('now'), datetime('now')
+      COALESCE((SELECT created_at FROM videos WHERE id = :id), datetime('now')),
+      datetime('now')
     )
   `);
 

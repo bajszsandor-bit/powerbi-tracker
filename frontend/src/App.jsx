@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
 import Home from './pages/Home.jsx';
 import VideoDetail from './pages/VideoDetail.jsx';
+import Channels from './pages/Channels.jsx';
 
 /**
  * App gyökér komponens.
@@ -32,6 +33,10 @@ function App() {
         <Link to="/" className="app-header__title">
           Power BI Learning Tracker
         </Link>
+        <nav className="app-header__nav">
+          <Link to="/" className="app-header__nav-link">Top 10 Videók</Link>
+          <Link to="/channels" className="app-header__nav-link">Top Csatornák</Link>
+        </nav>
         <span
           className={`app-header__status app-header__status--${backendStatus}`}
         >
@@ -45,6 +50,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/video/:id" element={<VideoDetail />} />
+        <Route path="/channels" element={<Channels />} />
       </Routes>
     </div>
   );
