@@ -403,11 +403,24 @@ body {
 
 .detail__meta {
   display: flex;
-  gap: 1rem;
-  font-size: 0.8rem;
-  color: #888;
+  gap: 0.6rem;
+  font-size: 0.82rem;
   flex-wrap: wrap;
   margin-bottom: 0.75rem;
+  align-items: center;
+}
+
+.detail__channel-badge {
+  background: #e8eaed;
+  color: #333;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.detail__date,
+.detail__views {
+  color: #888;
 }
 
 /* ── Language toggle ── */
@@ -457,6 +470,46 @@ body {
   line-height: 1.7;
   color: #444;
   white-space: pre-line;
+}
+
+.detail__analysis {
+  background: #f8faff;
+  border: 1px solid #d0e4ff;
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+}
+
+.detail__analysis .detail__section-title {
+  border-bottom-color: #d0e4ff;
+}
+
+.detail__summary {
+  font-size: 0.92rem;
+  line-height: 1.8;
+  color: #333;
+  white-space: pre-line;
+}
+
+.detail__yt-row {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e8eaed;
+}
+
+.detail__yt-btn {
+  display: inline-block;
+  padding: 0.55rem 1.25rem;
+  background: #e00;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.detail__yt-btn:hover {
+  opacity: 0.85;
 }
 
 /* ── Transcript panel ── */

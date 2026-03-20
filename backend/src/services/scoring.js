@@ -57,12 +57,32 @@ function scoreVideo(video, now = new Date()) {
  * @returns {object[]} Top 10 videó score mezővel kiegészítve, csökkenő sorrendben
  */
 function getTop10(videos, now = new Date()) {
-  return videos
-    .map((video) => ({
-      ...video,
-      freshnessScore: getFreshnessScore(video.publishedAt, now),
-      score: scoreVideo(video, now),
-    }))
+  const scored = videos.map((video) => ({
+    ...video,
+    freshnessScore: getFreshnessScore(video.publishedAt || video.published_at, now),
+    score: scoreVideo({ ...video, publishedAt: video.publishedAt || video.published_at }, now),
+  }));
+
+  // Csak az elmúlt 365 napon belüli videók
+  const cutoff = new Date(now);
+  cutoff.setFullYear(cutoff.getFullYear() - 1);
+
+  const fresh = scored.filter((v) => {
+    const date = v.publishedAt || v.published_at;
+    if (!date) return false;
+    return new Date(date) >= cutoff;
+  });
+
+  // Ha van elég friss → csak azok; egyébként legfrissebb elérhető
+  const pool = fresh.length >= 5 ? fresh : scored
+    .filter((v) => v.publishedAt || v.published_at)
+    .sort((a, b) => {
+      const da = new Date(a.publishedAt || a.published_at);
+      const db2 = new Date(b.publishedAt || b.published_at);
+      return db2 - da;
+    });
+
+  return (pool.length > 0 ? pool : scored)
     .sort((a, b) => b.score - a.score)
     .slice(0, 10);
 }

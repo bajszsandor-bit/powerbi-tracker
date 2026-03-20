@@ -13,6 +13,7 @@
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
     "@vitalets/google-translate-api": "^9.2.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

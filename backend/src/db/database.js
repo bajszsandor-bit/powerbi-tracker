@@ -54,10 +54,18 @@ function initDatabase() {
       dax_functions TEXT,
       dax_mentions INTEGER DEFAULT 0,
       score REAL DEFAULT 0,
+      ai_summary_hu TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `);
+
+  // Migráció: ai_summary_hu oszlop hozzáadása ha még nincs
+  try {
+    db.exec('ALTER TABLE videos ADD COLUMN ai_summary_hu TEXT');
+  } catch {
+    // Oszlop már létezik – normális újraindításkor
+  }
 
   if (process.env.NODE_ENV !== 'production') {
     console.log(`[DB] SQLite adatbázis inicializálva: ${DB_PATH}`);

@@ -166,4 +166,17 @@ function getLastUpdated() {
   return row?.last || null;
 }
 
-export { upsertVideos, getAllVideos, getVideoCount, updateTranscriptStatus, updateTranslations, updateDaxFunctions, getVideoById, getLastUpdated };
+/**
+ * Elmenti egy videó AI-generált magyar összefoglalóját.
+ *
+ * @param {string} videoId
+ * @param {string} summary
+ */
+function updateAiSummary(videoId, summary) {
+  const db = getDatabase();
+  db.prepare(
+    `UPDATE videos SET ai_summary_hu = :summary, updated_at = datetime('now') WHERE id = :id`
+  ).run({ summary, id: videoId });
+}
+
+export { upsertVideos, getAllVideos, getVideoCount, updateTranscriptStatus, updateTranslations, updateDaxFunctions, getVideoById, getLastUpdated, updateAiSummary };

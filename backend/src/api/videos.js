@@ -4,12 +4,13 @@
  */
 
 import { Router } from 'express';
-import { getAllVideos, getVideoById, getLastUpdated, updateDaxFunctions, updateTranslations } from '../db/videoRepository.js';
+import { getAllVideos, getVideoById, getLastUpdated, updateDaxFunctions, updateTranslations, updateAiSummary } from '../db/videoRepository.js';
 import { getTop10 } from '../services/scoring.js';
 import { getDaxReference, extractDaxFunctions } from '../services/daxAnalyzer.js';
 import { checkYtdlpInstalled, collectVideos } from '../services/ytdlp.js';
 import { upsertVideos } from '../db/videoRepository.js';
 import { translateVideo } from '../services/translation.js';
+import { generateAiSummary } from '../services/aiSummary.js';
 
 const router = Router();
 
@@ -84,6 +85,18 @@ router.post('/refresh', async (req, res, next) => {
             });
             updateTranslations(video.id, { titleHu, descriptionHu, transcriptHu: null });
           }
+
+          // AI magyar oktatói összefoglaló generálása (ha nincs még)
+          const fresh = getVideoById(video.id);
+          if (fresh && !fresh.ai_summary_hu) {
+            const summary = await generateAiSummary({
+              title: video.title,
+              channel_title: video.channelTitle,
+              description: video.description,
+              description_hu: fresh.description_hu,
+            });
+            if (summary) updateAiSummary(video.id, summary);
+          }
         } catch {
           // egyedi hiba nem állítja le a többi elemzését
         }
@@ -115,6 +128,7 @@ router.get('/videos/:id', (req, res, next) => {
       ...video,
       transcriptAvailable: Boolean(video.has_transcript),
       titleHu: video.title_hu || null,
+      aiSummaryHu: video.ai_summary_hu || null,
       daxFunctions,
     });
   } catch (err) {

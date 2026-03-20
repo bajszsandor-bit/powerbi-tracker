@@ -1,10 +1,27 @@
 /**
  * @file VideoDetail.jsx
- * @description Videó részletes oldal – YouTube iframe és magyar leírás/elemzés.
+ * @description Videó részletes oldal – YouTube iframe és magyar AI oktatói elemzés.
  */
 
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+
+/** **félkövér** → <strong> konverzió egyszerű markdown-ból */
+function renderMarkdown(text) {
+  if (!text) return null;
+  return text.split('\n').map((line, i) => {
+    const parts = line.split(/\*\*(.*?)\*\*/g);
+    const rendered = parts.map((part, j) =>
+      j % 2 === 1 ? <strong key={j}>{part}</strong> : part
+    );
+    return (
+      <span key={i}>
+        {rendered}
+        {'\n'}
+      </span>
+    );
+  });
+}
 
 function VideoDetail() {
   const { id } = useParams();
@@ -52,19 +69,23 @@ function VideoDetail() {
   }
 
   const title = video.title_hu || video.title || '';
-  const description = video.description_hu || video.description || '';
   const channel = video.channel_title || '';
   const publishedAt = video.published_at
-    ? new Date(video.published_at).toLocaleDateString('hu-HU', { year: 'numeric', month: 'long', day: 'numeric' })
+    ? new Date(video.published_at).toLocaleDateString('hu-HU', {
+        year: 'numeric', month: 'long', day: 'numeric',
+      })
     : null;
+
+  // Összefoglaló: AI > lefordított leírás > angol leírás
+  const summary = video.aiSummaryHu || video.description_hu || video.description || null;
 
   return (
     <article className="detail">
       <nav className="detail__nav">
-        <Link to="/" className="back-link">← Vissza</Link>
+        <Link to="/" className="back-link">← Vissza a listához</Link>
       </nav>
 
-      {/* Videó lejátszó */}
+      {/* ── Videó lejátszó ── */}
       <div className="detail__player">
         <iframe
           className="detail__iframe"
@@ -75,31 +96,37 @@ function VideoDetail() {
         />
       </div>
 
-      {/* Cím + csatorna + dátum */}
+      {/* ── Cím + meta ── */}
       <div className="detail__header">
         <h2 className="detail__title">{title}</h2>
         <div className="detail__meta">
-          {channel && <span className="detail__channel">{channel}</span>}
-          {publishedAt && <span>{publishedAt}</span>}
+          {channel && <span className="detail__channel-badge">{channel}</span>}
+          {publishedAt && <span className="detail__date">📅 {publishedAt}</span>}
           {video.view_count > 0 && (
-            <span>👁 {Number(video.view_count).toLocaleString('hu-HU')}</span>
+            <span className="detail__views">
+              👁 {Number(video.view_count).toLocaleString('hu-HU')} megtekintés
+            </span>
           )}
         </div>
       </div>
 
-      {/* Magyar oktató leírás */}
-      {description && (
-        <section className="detail__section">
-          <h3 className="detail__section-title">📋 Videó tartalma</h3>
-          <p className="detail__description">{description}</p>
+      {/* ── Magyar AI elemzés ── */}
+      {summary && (
+        <section className="detail__section detail__analysis">
+          <h3 className="detail__section-title">
+            🎓 Videó elemzés – Magyar oktatói leírás
+          </h3>
+          <div className="detail__summary">
+            {renderMarkdown(summary)}
+          </div>
         </section>
       )}
 
-      {/* DAX függvények – ha van */}
+      {/* ── DAX függvények ── */}
       {video.daxFunctions && video.daxFunctions.length > 0 && (
         <section className="detail__section">
           <h3 className="detail__section-title">
-            📐 DAX függvények ({video.daxFunctions.length})
+            📐 DAX függvények a videóban ({video.daxFunctions.length})
           </h3>
           <div className="dax-grid">
             {video.daxFunctions.map((fn) => (
@@ -114,6 +141,18 @@ function VideoDetail() {
           </div>
         </section>
       )}
+
+      {/* ── Megnyitás YouTube-on ── */}
+      <div className="detail__yt-row">
+        <a
+          href={video.video_url || `https://www.youtube.com/watch?v=${video.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="detail__yt-btn"
+        >
+          ▶ Megnyitás YouTube-on
+        </a>
+      </div>
     </article>
   );
 }
