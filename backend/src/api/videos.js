@@ -12,6 +12,7 @@ import { upsertVideos } from '../db/videoRepository.js';
 import { translateVideo, translateCues } from '../services/translation.js';
 import { generateAiSummary } from '../services/aiSummary.js';
 import { downloadTranscript } from '../services/transcript.js';
+import { transcribeAudio } from '../services/transcribe.js';
 
 const router = Router();
 
@@ -375,6 +376,43 @@ function formatChapterTime(seconds) {
   const s = seconds % 60;
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
+
+/**
+ * POST /api/videos/:id/transcribe
+ * Groq Whisper-large-v3 felirat generálás videókhoz amiknek nincs YouTube auto-caption.
+ * Ingyenes: https://console.groq.com/keys (GROQ_API_KEY a .env-be)
+ *
+ * @returns {{ cues: object[], generated: boolean }}
+ */
+router.post('/videos/:id/transcribe', async (req, res, next) => {
+  try {
+    const video = getVideoById(req.params.id);
+    if (!video) return res.status(404).json({ error: 'Videó nem található' });
+
+    if (!process.env.GROQ_API_KEY) {
+      return res.status(400).json({
+        error: 'GROQ_API_KEY nincs beállítva',
+        hint: 'Ingyenes kulcs (nincs hitelkártya): https://console.groq.com/keys → add hozzá a .env-hez',
+      });
+    }
+
+    // 1. Whisper átírás (angol)
+    const cuesEn = await transcribeAudio(video.id, process.env.GROQ_API_KEY);
+    if (!cuesEn.length) {
+      return res.status(422).json({ error: 'Az átírás nem adott vissza szöveget' });
+    }
+
+    // 2. Magyar fordítás
+    const cuesHu = await translateCues(cuesEn, 200);
+
+    // 3. Mentés DB-be
+    updateTranscriptCues(video.id, cuesHu);
+
+    res.json({ cues: cuesHu, generated: true });
+  } catch (err) {
+    next(err);
+  }
+});
 
 /**
  * PUT /api/videos/:id/chapters

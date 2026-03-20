@@ -33,6 +33,7 @@ function VideoDetail() {
   const [subtitleStatus, setSubtitleStatus] = useState('idle');
   const [currentSubtitle, setCurrentSubtitle] = useState('');
   const [ttsEnabled, setTtsEnabled] = useState(false);
+  const [transcribeStatus, setTranscribeStatus] = useState('idle'); // idle | loading | error
 
   // Fejezetek
   const [chapters, setChapters] = useState([]);
@@ -51,12 +52,18 @@ function VideoDetail() {
   const cuesRef = useRef([]);
   const chaptersRef = useRef([]);
 
-  // ttsEnabled → ref szinkronizálás
+  // ttsEnabled → ref szinkronizálás + YouTube hangerő szabályozás
   useEffect(() => {
     ttsEnabledRef.current = ttsEnabled;
     if (!ttsEnabled && window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
+    // TTS BE → YouTube hangerő csökkentése (csak ha van felirat); TTS KI → visszaállítás
+    try {
+      if (playerRef.current?.setVolume) {
+        playerRef.current.setVolume(ttsEnabled ? 20 : 100);
+      }
+    } catch {}
   }, [ttsEnabled]);
 
   // cues → ref szinkronizálás
@@ -348,6 +355,33 @@ function VideoDetail() {
               title={ttsEnabled ? 'Magyar szinkronhang kikapcsolása' : 'Magyar szinkronhang bekapcsolása (Noémi Neural)'}
             >
               {ttsEnabled ? '🔊 Szinkron BE' : '🎙️ Szinkronhang'}
+            </button>
+          )}
+          {subtitleStatus === 'unavailable' && (
+            <button
+              className={`detail__transcribe-btn${transcribeStatus === 'loading' ? ' detail__transcribe-btn--loading' : ''}`}
+              disabled={transcribeStatus === 'loading'}
+              onClick={() => {
+                setTranscribeStatus('loading');
+                fetch(`/api/videos/${id}/transcribe`, { method: 'POST' })
+                  .then((r) => r.json())
+                  .then((data) => {
+                    if (data.cues?.length) {
+                      setCues(data.cues);
+                      setSubtitleStatus('ready');
+                      setTranscribeStatus('idle');
+                    } else {
+                      setTranscribeStatus('error');
+                    }
+                  })
+                  .catch(() => setTranscribeStatus('error'));
+              }}
+            >
+              {transcribeStatus === 'loading'
+                ? '⏳ Generálás... (2-3 perc)'
+                : transcribeStatus === 'error'
+                ? '❌ Hiba – próbáld újra'
+                : '🎤 Felirat generálása'}
             </button>
           )}
         </div>
