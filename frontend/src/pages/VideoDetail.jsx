@@ -108,13 +108,31 @@ function VideoDetail() {
           const cue = cuesRef.current.find((c) => t >= c.start && t < c.end);
           setCurrentSubtitle(cue ? cue.text : '');
 
-          if (ttsEnabledRef.current && cue && cue !== lastSpokenRef.current && window.speechSynthesis) {
+          if (ttsEnabledRef.current && cue && cue !== lastSpokenRef.current) {
             lastSpokenRef.current = cue;
-            window.speechSynthesis.cancel();
-            const utter = new SpeechSynthesisUtterance(cue.text);
-            utter.lang = 'hu-HU';
-            utter.rate = 1.05;
-            window.speechSynthesis.speak(utter);
+            // Edge TTS – Microsoft Neural hang (sokkal természetesebb)
+            fetch('/api/tts/speak', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: cue.text, voice: 'noemi' }),
+            })
+              .then((r) => r.blob())
+              .then((blob) => {
+                if (!ttsEnabledRef.current) return; // közben kikapcsolták
+                const url = URL.createObjectURL(blob);
+                const audio = new Audio(url);
+                audio.onended = () => URL.revokeObjectURL(url);
+                audio.play().catch(() => {});
+              })
+              .catch(() => {
+                // Edge TTS nem elérhető → fallback böngésző TTS
+                if (!window.speechSynthesis) return;
+                window.speechSynthesis.cancel();
+                const utter = new SpeechSynthesisUtterance(cue.text);
+                utter.lang = 'hu-HU';
+                utter.rate = 1.05;
+                window.speechSynthesis.speak(utter);
+              });
           }
         } catch { /* player nem kész */ }
       }, 300);
@@ -219,9 +237,9 @@ function VideoDetail() {
             <button
               className={`detail__tts-btn${ttsEnabled ? ' detail__tts-btn--on' : ''}`}
               onClick={() => setTtsEnabled((v) => !v)}
-              title={ttsEnabled ? 'Magyar felolvasás kikapcsolása' : 'Magyar felolvasás bekapcsolása'}
+              title={ttsEnabled ? 'Magyar szinkronhang kikapcsolása' : 'Magyar szinkronhang bekapcsolása (Noémi Neural)'}
             >
-              {ttsEnabled ? '🔊 Felolvasás BE' : '🔇 Felolvasás'}
+              {ttsEnabled ? '🔊 Szinkron BE' : '🎙️ Szinkronhang'}
             </button>
           )}
         </div>

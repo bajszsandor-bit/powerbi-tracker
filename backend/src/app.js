@@ -9,6 +9,7 @@ import cors from 'cors';
 import healthRouter from './api/health.js';
 import ytdlpRouter from './api/ytdlp.js';
 import videosRouter from './api/videos.js';
+import ttsRouter from './api/tts.js';
 import { getSchedulerStatus } from './services/scheduler.js';
 
 const app = express();
@@ -28,6 +29,7 @@ app.use(express.json());
 app.use('/api/health', healthRouter);
 app.use('/api', ytdlpRouter);
 app.use('/api', videosRouter);
+app.use('/api/tts', ttsRouter);
 
 /**
  * GET /api/status
