@@ -366,14 +366,18 @@ function VideoDetail() {
               disabled={transcribeStatus === 'loading'}
               onClick={() => {
                 setTranscribeStatus('loading');
-                fetch(`/api/videos/${id}/transcribe`, { method: 'POST' })
+                const ctrl = new AbortController();
+                const tid = setTimeout(() => { ctrl.abort(); setTranscribeStatus('error'); }, 300000); // 5 perc max
+                fetch(`/api/videos/${id}/transcribe`, { method: 'POST', signal: ctrl.signal })
                   .then((r) => r.json())
                   .then((data) => {
-                    if (data.error?.includes('rate limit') || data.error?.includes('Groq rate')) {
+                    clearTimeout(tid);
+                    if (data.error?.includes('rate limit') || data.error?.includes('Groq rate') || data.status === 429) {
                       setTranscribeRetry(data.retryAfter || '5 perc');
                       setTranscribeStatus('ratelimit');
                       return;
                     }
+                    if (data.error) { setTranscribeStatus('error'); return; }
                     if (data.cues?.length) {
                       setCues(data.cues);
                       setSubtitleStatus('ready');
@@ -382,7 +386,7 @@ function VideoDetail() {
                       setTranscribeStatus('error');
                     }
                   })
-                  .catch(() => setTranscribeStatus('error'));
+                  .catch((e) => { clearTimeout(tid); if (e.name !== 'AbortError') setTranscribeStatus('error'); });
               }}
             >
               {transcribeStatus === 'loading'
