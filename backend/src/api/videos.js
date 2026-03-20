@@ -7,7 +7,7 @@ import { Router } from 'express';
 import { getAllVideos, getVideoById, getLastUpdated, updateDaxFunctions, updateTranslations, updateAiSummary } from '../db/videoRepository.js';
 import { getTop10 } from '../services/scoring.js';
 import { getDaxReference, extractDaxFunctions } from '../services/daxAnalyzer.js';
-import { checkYtdlpInstalled, collectVideos } from '../services/ytdlp.js';
+import { checkYtdlpInstalled, collectVideos, fetchSingleVideo } from '../services/ytdlp.js';
 import { upsertVideos } from '../db/videoRepository.js';
 import { translateVideo } from '../services/translation.js';
 import { generateAiSummary } from '../services/aiSummary.js';
@@ -130,6 +130,76 @@ router.get('/videos/:id', (req, res, next) => {
       titleHu: video.title_hu || null,
       aiSummaryHu: video.ai_summary_hu || null,
       daxFunctions,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/import-video
+ * Egy felhasználó által megadott YouTube URL alapján lekéri, lefordítja és elmenti a videót.
+ * Szinkron feldolgozás – a válasz csak az elemzés végeztével érkezik.
+ *
+ * @body {{ url: string }}
+ * @returns {{ id: string, title: string, titleHu: string|null }}
+ */
+router.post('/import-video', async (req, res, next) => {
+  try {
+    const { url } = req.body || {};
+    if (!url || typeof url !== 'string') {
+      return res.status(400).json({ error: 'Hiányzó URL' });
+    }
+    if (!url.includes('youtube.com') && !url.includes('youtu.be')) {
+      return res.status(400).json({ error: 'Csak YouTube URL-t fogadunk el' });
+    }
+
+    const ytdlpStatus = await checkYtdlpInstalled();
+    if (!ytdlpStatus.installed) {
+      return res.status(503).json({ error: 'yt-dlp nincs telepítve', message: ytdlpStatus.message });
+    }
+
+    const video = await fetchSingleVideo(url.trim());
+    if (!video) {
+      return res.status(404).json({ error: 'A videó nem található vagy nem elérhető' });
+    }
+
+    upsertVideos([video]);
+
+    // DAX elemzés
+    const text = `${video.title || ''} ${video.description || ''}`;
+    const daxFns = extractDaxFunctions(text);
+    updateDaxFunctions(video.id, daxFns);
+
+    // Magyar fordítás
+    const saved = getVideoById(video.id);
+    if (saved && !saved.title_hu) {
+      const { titleHu, descriptionHu } = await translateVideo({
+        id: video.id,
+        title: video.title,
+        description: video.description,
+        title_hu: null,
+      });
+      updateTranslations(video.id, { titleHu, descriptionHu, transcriptHu: null });
+    }
+
+    // AI összefoglaló
+    const fresh = getVideoById(video.id);
+    if (fresh && !fresh.ai_summary_hu) {
+      const summary = await generateAiSummary({
+        title: video.title,
+        channel_title: video.channelTitle,
+        description: video.description,
+        description_hu: fresh.description_hu,
+      });
+      if (summary) updateAiSummary(video.id, summary);
+    }
+
+    const final = getVideoById(video.id);
+    res.json({
+      id: video.id,
+      title: video.title,
+      titleHu: final?.title_hu || null,
     });
   } catch (err) {
     next(err);

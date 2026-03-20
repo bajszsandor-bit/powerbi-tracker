@@ -792,6 +792,146 @@ body {
   opacity: 0.75;
 }
 
+/* ── Nav link accent (import) ── */
+.app-header__nav-link--accent {
+  background: rgba(255,255,255,0.18);
+  font-weight: 600;
+}
+
+.app-header__nav-link--accent:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+/* ── Import page ── */
+.import-page {
+  max-width: 700px;
+  margin: 2.5rem auto;
+  padding: 0 1rem 3rem;
+}
+
+.import-page__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 0.6rem;
+}
+
+.import-page__desc {
+  font-size: 0.92rem;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.import-form {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.import-form__input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.65rem 1rem;
+  border: 1.5px solid #ccc;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.import-form__input:focus {
+  border-color: #1a73e8;
+}
+
+.import-form__input:disabled {
+  background: #f5f5f5;
+}
+
+.import-form__btn {
+  padding: 0.65rem 1.4rem;
+  background: #1a73e8;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.import-form__btn:hover:not(:disabled) {
+  background: #1558b0;
+}
+
+.import-form__btn:disabled {
+  background: #9ec0f5;
+  cursor: not-allowed;
+}
+
+.import-state {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+  padding: 1.25rem 1.5rem;
+}
+
+.import-state__icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  padding-top: 0.1rem;
+}
+
+.import-state__label {
+  font-size: 0.85rem;
+  color: #888;
+  margin-bottom: 0.2rem;
+}
+
+.import-state__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 0.5rem;
+}
+
+.import-state__msg {
+  font-size: 0.92rem;
+  color: #555;
+  line-height: 1.6;
+}
+
+.import-state__link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1a73e8;
+  text-decoration: none;
+}
+
+.import-state__link:hover {
+  text-decoration: underline;
+}
+
+.import-state--success {
+  border-left: 4px solid #34a853;
+}
+
+.import-state--error {
+  border-left: 4px solid #ea4335;
+  color: #c0392b;
+}
+
+.import-state--error .import-state__msg {
+  color: #c0392b;
+}
+
 /* ── Responsive ── */
 @media (max-width: 600px) {
   .home__toolbar {

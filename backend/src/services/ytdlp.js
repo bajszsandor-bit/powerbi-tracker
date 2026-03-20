@@ -182,4 +182,16 @@ async function collectVideos() {
   return all;
 }
 
-export { checkYtdlpInstalled, collectVideos, parseYtdlpOutput, getYtdlpPath };
+/**
+ * Egyetlen YouTube videó metaadatait kéri le egy URL alapján.
+ *
+ * @param {string} url - YouTube videó URL
+ * @returns {Promise<import('../db/videoRepository.js').VideoInput | null>} Videó objektum vagy null
+ */
+async function fetchSingleVideo(url) {
+  const raw = await runYtdlp([url, '--dump-json', '--no-download', '--no-playlist']);
+  const videos = parseYtdlpOutput(raw);
+  return videos[0] || null;
+}
+
+export { checkYtdlpInstalled, collectVideos, parseYtdlpOutput, getYtdlpPath, fetchSingleVideo };
