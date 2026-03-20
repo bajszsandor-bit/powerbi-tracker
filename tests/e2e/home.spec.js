@@ -17,7 +17,7 @@ test('főoldal betölt és a cím megjelenik', async ({ page }) => {
 
   await expect(page).toHaveTitle(/Power BI/);
 
-  await expect(page.locator('h1')).toContainText('Power BI Learning Tracker');
+  await expect(page.locator('.app-header__title')).toContainText('Power BI Learning Tracker');
 
   expect(consoleErrors).toHaveLength(0);
 });
@@ -71,4 +71,17 @@ test('DAX szűrő toggle működik', async ({ page }) => {
   const allBtn = page.locator('.filter-btn', { hasText: 'Összes' });
   await allBtn.click();
   await expect(allBtn).toHaveClass(/filter-btn--active/);
+});
+
+test('/video/ismeretlen-id 404 oldalt jelenít meg a frontenden', async ({ page }) => {
+  await page.goto('/video/ismeretlen-id-xyz');
+  await expect(page.locator('.detail-state')).toBeVisible();
+  await expect(page.locator('.back-link')).toBeVisible();
+});
+
+test('header cím kattintható és visszavisz a főoldalra', async ({ page }) => {
+  await page.goto('/video/ismeretlen-id-xyz');
+  await page.locator('.app-header__title').click();
+  await expect(page).toHaveURL('/');
+  await expect(page.locator('h1, .app-header__title')).toBeVisible();
 });

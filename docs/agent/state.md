@@ -6,6 +6,31 @@
 
 ## Legutóbbi állapot
 
+**Elkészült iteráció:** OUT-08
+
+**Dátum:** 2026-03-20
+
+**Elvégzett munka:**
+- `frontend/src/pages/VideoDetail.jsx` – YouTube iframe, magyar/angol toggle, felirat panel, DAX kártyák
+- `frontend/src/App.jsx` – react-router-dom Routes, header Link, app-header CSS osztályok
+- `frontend/src/main.jsx` – BrowserRouter wrapper
+- `frontend/src/index.css` – app-header, detail, lang-toggle, dax-card, detail-state stílusok
+- `tests/e2e/home.spec.js` – 2 új teszt; összesen 9/9 e2e zöld
+- `frontend/package.json` – react-router-dom dependency hozzáadva
+
+**Technikai döntések:**
+- `youtube-nocookie.com` iframe embed (GDPR-barát)
+- Felirat görgethető max-height 300px panelban
+- DAX kártyák auto-fill gridje (min 260px)
+
+**Ami nem készült el:** –
+
+**Következő javasolt iteráció:** OUT-09
+
+---
+
+## Előző iteráció (OUT-07)
+
 **Elkészült iteráció:** OUT-07
 
 **Dátum:** 2026-03-20
