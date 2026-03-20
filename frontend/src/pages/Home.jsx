@@ -201,17 +201,43 @@ function Home() {
       )}
 
       {status === 'no-ytdlp' && (
-        <div className="home__state home__state--error">
-          <p className="home__state-title">⚠️ yt-dlp nincs telepítve</p>
-          <p>{errorMessage}</p>
-          <a
-            href="https://github.com/yt-dlp/yt-dlp/releases"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="home__state-link"
-          >
-            Telepítési útmutató →
-          </a>
+        <div className="install-guide" data-testid="install-guide">
+          <h2 className="install-guide__title">⚠️ yt-dlp telepítés szükséges</h2>
+          <p className="install-guide__intro">
+            A videógyűjtéshez szükséges a <strong>yt-dlp</strong> eszköz. Kövesd az alábbi lépéseket:
+          </p>
+          <ol className="install-guide__steps">
+            <li>
+              Nyisd meg a{' '}
+              <a
+                href="https://github.com/yt-dlp/yt-dlp/releases"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="install-guide__link"
+              >
+                yt-dlp Releases oldalt
+              </a>
+            </li>
+            <li>
+              Töltsd le a rendszerednek megfelelő fájlt:
+              <ul className="install-guide__sub">
+                <li><strong>Windows:</strong> <code>yt-dlp.exe</code></li>
+                <li><strong>macOS/Linux:</strong> <code>yt-dlp</code></li>
+              </ul>
+            </li>
+            <li>
+              Másold a fájlt egy olyan mappába, amely szerepel a <code>PATH</code>-ban
+              (pl. <code>C:\Windows\System32</code> Windows-on, vagy <code>/usr/local/bin</code> macOS/Linux-on)
+            </li>
+            <li>
+              Ellenőrizd a telepítést terminálban:
+              <pre className="install-guide__code">yt-dlp --version</pre>
+            </li>
+            <li>Ezután kattints a „Frissítés most" gombra fent.</li>
+          </ol>
+          <button className="refresh-btn" onClick={handleRefresh} disabled={refreshing}>
+            {refreshing ? 'Ellenőrzés...' : '🔄 Újrapróbálás'}
+          </button>
         </div>
       )}
 

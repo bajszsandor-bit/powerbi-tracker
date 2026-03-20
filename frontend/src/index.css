@@ -482,6 +482,62 @@ body {
   font-weight: 600;
 }
 
+/* ── yt-dlp telepítési útmutató ── */
+.install-guide {
+  max-width: 640px;
+  margin: 2rem auto;
+  background: #fff;
+  border: 1px solid #ffd54f;
+  border-radius: 10px;
+  padding: 1.75rem 2rem;
+}
+
+.install-guide__title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #856404;
+  margin-bottom: 0.75rem;
+}
+
+.install-guide__intro {
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 1.25rem;
+  line-height: 1.6;
+}
+
+.install-guide__steps {
+  padding-left: 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+  color: #333;
+  line-height: 1.6;
+}
+
+.install-guide__sub {
+  margin-top: 0.3rem;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+
+.install-guide__link {
+  color: #1a73e8;
+  text-decoration: underline;
+}
+
+.install-guide__code {
+  background: #f1f3f4;
+  border-radius: 4px;
+  padding: 0.4rem 0.75rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  margin-top: 0.4rem;
+  display: inline-block;
+}
+
 /* ── Responsive ── */
 @media (max-width: 600px) {
   .home__toolbar {
