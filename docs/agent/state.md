@@ -6,6 +6,27 @@
 
 ## Legutóbbi állapot
 
+**Elkészült iteráció:** OUT-10 ✅ PROJEKT KÉSZ
+
+**Dátum:** 2026-03-20
+
+**Elvégzett munka:**
+- `frontend/src/pages/Home.jsx` – no-ytdlp állapot → lépéses telepítési útmutató (winget, manuális, macOS, Linux)
+- `frontend/src/index.css` – .install-guide stílusok
+- `README.md` – node:sqlite javítás, /api/status + /api/check-ytdlp dokumentálva
+- Teljes teszt suite: 75/75 unit + 10/10 e2e zöld
+
+**Technikai döntések:**
+- install-guide saját CSS osztályokkal, nem a home__state-re alapozva
+
+**Ami nem készült el:** –
+
+**Következő javasolt iteráció:** nincs – a projekt minden tervezett iterációja elkészült (OUT-01 – OUT-10)
+
+---
+
+## Előző iteráció (OUT-09)
+
 **Elkészült iteráció:** OUT-09
 
 **Dátum:** 2026-03-20
