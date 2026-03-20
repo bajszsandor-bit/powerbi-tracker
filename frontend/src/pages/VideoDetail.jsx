@@ -138,7 +138,6 @@ function VideoDetail() {
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
-      try { playerRef.current?.destroy(); } catch {}
       playerRef.current = null;
     };
   }, [cues]); // Csak egyszer – cues betöltésekor
