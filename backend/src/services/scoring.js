@@ -50,7 +50,7 @@ function scoreVideo(video, now = new Date()) {
 
 /**
  * Szűri és rendezi a videókat pontszám alapján, visszaadja a Top 10-et.
- * Csak az elmúlt 30 napon belüli videók kerülnek be (freshnessScore > 0).
+ * Dátum nélküli videók is szerepelnek (freshnessScore = 0), de pontszám alapján hátrébb kerülnek.
  *
  * @param {object[]} videos - Videók tömbje az adatbázisból
  * @param {Date} [now] - Opcionális referencia dátum (teszteléshez)
@@ -63,7 +63,6 @@ function getTop10(videos, now = new Date()) {
       freshnessScore: getFreshnessScore(video.publishedAt, now),
       score: scoreVideo(video, now),
     }))
-    .filter((video) => video.freshnessScore > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, 10);
 }

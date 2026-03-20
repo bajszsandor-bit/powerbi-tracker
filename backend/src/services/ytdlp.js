@@ -57,6 +57,7 @@ async function checkYtdlpInstalled() {
   try {
     const { stdout } = await execFileAsync(getYtdlpPath(), ['--version'], {
       timeout: 10_000,
+      windowsHide: true,
     });
     return {
       installed: true,
@@ -83,6 +84,7 @@ async function runYtdlp(args) {
   const { stdout } = await execFileAsync(getYtdlpPath(), args, {
     timeout: YTDLP_TIMEOUT_MS,
     maxBuffer: 50 * 1024 * 1024,
+    windowsHide: true,
   });
   return stdout;
 }
@@ -141,7 +143,7 @@ async function collectVideos() {
     try {
       let args;
       if (source.type === 'search') {
-        args = [source.query, '--dump-json', '--no-download', '--flat-playlist'];
+        args = [source.query, '--dump-json', '--no-download', '--playlist-end', '20'];
       } else {
         args = [source.url, '--dump-json', '--no-download', '--playlist-end', '10'];
       }
