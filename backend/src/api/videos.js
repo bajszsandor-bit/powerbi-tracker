@@ -76,28 +76,33 @@ router.post('/refresh', async (req, res, next) => {
           const daxFns = extractDaxFunctions(text);
           updateDaxFunctions(video.id, daxFns);
 
-          // Magyar fordítás (cím + leírás)
+          // Magyar fordítás (cím + leírás) – csak ha tényleg magyar lett
+          const isHu = (t) => t && /[áéíóöőúüű]/i.test(t);
           const saved = getVideoById(video.id);
-          if (saved && !saved.title_hu) {
+          if (saved && !isHu(saved.title_hu)) {
             const { titleHu, descriptionHu } = await translateVideo({
               id: video.id,
               title: video.title,
               description: video.description,
               title_hu: null,
             });
-            updateTranslations(video.id, { titleHu, descriptionHu, transcriptHu: null });
+            updateTranslations(video.id, {
+              titleHu: isHu(titleHu) ? titleHu : saved.title_hu,
+              descriptionHu: isHu(descriptionHu) ? descriptionHu : saved.description_hu,
+              transcriptHu: null,
+            });
           }
 
-          // AI magyar oktatói összefoglaló generálása (ha nincs még)
+          // AI magyar oktatói összefoglaló – csak ha tényleg magyar
           const fresh = getVideoById(video.id);
-          if (fresh && !fresh.ai_summary_hu) {
+          if (fresh && !isHu(fresh.ai_summary_hu)) {
             const summary = await generateAiSummary({
               title: video.title,
               channel_title: video.channelTitle,
               description: video.description,
               description_hu: fresh.description_hu,
             });
-            if (summary) updateAiSummary(video.id, summary);
+            if (summary && isHu(summary)) updateAiSummary(video.id, summary);
           }
         } catch {
           // egyedi hiba nem állítja le a többi elemzését
@@ -132,11 +137,29 @@ router.get('/videos/:id', (req, res, next) => {
 
     const chaptersJson = video.chapters_json ? JSON.parse(video.chapters_json) : [];
 
+    // Háttérben fordítjuk a leírást ha hiányzik (nem blokkolja a választ)
+    const looksHungarian = (t) => t && /[áéíóöőúüű]/i.test(t);
+    if (!video.ai_summary_hu && !looksHungarian(video.description_hu)) {
+      setImmediate(async () => {
+        try {
+          const { translateText } = await import('../services/translation.js');
+          const descHu = await translateText((video.description || '').slice(0, 1500));
+          if (descHu && looksHungarian(descHu)) {
+            updateTranslations(video.id, { titleHu: video.title_hu, descriptionHu: descHu, transcriptHu: null });
+            // Ha van Anthropic kulcs, AI összefoglalót generálunk, különben a fordítást mentjük
+            const summary = await generateAiSummary({ ...video, description_hu: descHu });
+            if (summary && looksHungarian(summary)) updateAiSummary(video.id, summary);
+            else updateAiSummary(video.id, descHu);
+          }
+        } catch {}
+      });
+    }
+
     res.json({
       ...video,
       transcriptAvailable: Boolean(video.has_transcript),
       titleHu: video.title_hu || null,
-      aiSummaryHu: video.ai_summary_hu || null,
+      aiSummaryHu: video.ai_summary_hu || video.description_hu || null,
       daxFunctions,
       transcriptCuesHu,
       chaptersJson,
@@ -397,7 +420,21 @@ router.post('/videos/:id/transcribe', async (req, res, next) => {
     }
 
     // 1. Whisper átírás (angol)
-    const cuesEn = await transcribeAudio(video.id, process.env.GROQ_API_KEY);
+    let cuesEn;
+    try {
+      cuesEn = await transcribeAudio(video.id, process.env.GROQ_API_KEY);
+    } catch (err) {
+      const msg = err?.message || '';
+      const retryMatch = msg.match(/try again in (\d+m\d+s|\d+s)/i);
+      if (msg.includes('rate_limit_exceeded') || msg.includes('429')) {
+        return res.status(429).json({
+          error: 'Groq rate limit – próbáld újra pár perc múlva',
+          retryAfter: retryMatch?.[1] || '5 perc',
+        });
+      }
+      throw err;
+    }
+
     if (!cuesEn.length) {
       return res.status(422).json({ error: 'Az átírás nem adott vissza szöveget' });
     }

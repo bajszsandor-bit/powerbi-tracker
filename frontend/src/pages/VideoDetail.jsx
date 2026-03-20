@@ -33,7 +33,8 @@ function VideoDetail() {
   const [subtitleStatus, setSubtitleStatus] = useState('idle');
   const [currentSubtitle, setCurrentSubtitle] = useState('');
   const [ttsEnabled, setTtsEnabled] = useState(false);
-  const [transcribeStatus, setTranscribeStatus] = useState('idle'); // idle | loading | error
+  const [transcribeStatus, setTranscribeStatus] = useState('idle'); // idle | loading | error | ratelimit
+  const [transcribeRetry, setTranscribeRetry] = useState('');
 
   // Fejezetek
   const [chapters, setChapters] = useState([]);
@@ -366,6 +367,11 @@ function VideoDetail() {
                 fetch(`/api/videos/${id}/transcribe`, { method: 'POST' })
                   .then((r) => r.json())
                   .then((data) => {
+                    if (data.error?.includes('rate limit') || data.error?.includes('Groq rate')) {
+                      setTranscribeRetry(data.retryAfter || '5 perc');
+                      setTranscribeStatus('ratelimit');
+                      return;
+                    }
                     if (data.cues?.length) {
                       setCues(data.cues);
                       setSubtitleStatus('ready');
@@ -379,6 +385,8 @@ function VideoDetail() {
             >
               {transcribeStatus === 'loading'
                 ? '⏳ Generálás... (2-3 perc)'
+                : transcribeStatus === 'ratelimit'
+                ? `⏱️ Próbáld újra: ${transcribeRetry}`
                 : transcribeStatus === 'error'
                 ? '❌ Hiba – próbáld újra'
                 : '🎤 Felirat generálása'}
