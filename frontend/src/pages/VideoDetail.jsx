@@ -3,7 +3,7 @@
  * @description Videó részletes oldal – automatikus magyar felirat + TTS szinkronhang + fejezet navigátor.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 
 /** **félkövér** → <strong> konverzió egyszerű markdown-ból */
@@ -38,6 +38,10 @@ function VideoDetail() {
   const [chapters, setChapters] = useState([]);
   const [currentChapter, setCurrentChapter] = useState(null);
   const [chapterInput, setChapterInput] = useState('');
+
+  // AI fejezet elemzés
+  const [chapterAnalyses, setChapterAnalyses] = useState({});  // index → { status, text }
+  const [expandedAnalysis, setExpandedAnalysis] = useState(null);
 
   // Refs – ezeket nem kell újra-renderelni
   const ttsEnabledRef = useRef(false);
@@ -223,6 +227,50 @@ function VideoDetail() {
     }).then(r => r.json()).then(() => setChapters(parsed));
   }
 
+  function handleAnalyzeChapter(chapterIndex) {
+    const ch = chapters[chapterIndex];
+    if (!ch) return;
+
+    // Toggle: ha már nyitva van, zárjuk be
+    if (expandedAnalysis === chapterIndex) {
+      setExpandedAnalysis(null);
+      return;
+    }
+
+    setExpandedAnalysis(chapterIndex);
+
+    // Ha már van eredmény, csak megjelenítjük
+    if (chapterAnalyses[chapterIndex]?.status === 'done') return;
+
+    setChapterAnalyses((prev) => ({ ...prev, [chapterIndex]: { status: 'loading', text: '' } }));
+
+    const chapterEndTime = chapters[chapterIndex + 1]?.time ?? null;
+
+    fetch(`/api/videos/${id}/analyze-chapter`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chapterIndex,
+        chapterTitle: ch.title,
+        chapterTime: ch.time,
+        chapterEndTime,
+      }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        setChapterAnalyses((prev) => ({
+          ...prev,
+          [chapterIndex]: { status: 'done', text: data.analysis || '' },
+        }));
+      })
+      .catch(() => {
+        setChapterAnalyses((prev) => ({
+          ...prev,
+          [chapterIndex]: { status: 'error', text: 'Az elemzés nem sikerült.' },
+        }));
+      });
+  }
+
   if (status === 'loading') {
     return (
       <div className="detail-state">
@@ -262,7 +310,10 @@ function VideoDetail() {
 
   function subtitleText() {
     if (subtitleStatus === 'loading') return '⏳ Magyar felirat betöltése...';
-    if (subtitleStatus === 'unavailable') return 'Ehhez a videóhoz nincs automatikus felirat';
+    if (subtitleStatus === 'unavailable') {
+      if (chapters.length > 0) return '⚠️ Automatikus felirat nem elérhető – Fejezetalapú tanulás aktív';
+      return 'Ehhez a videóhoz nincs automatikus felirat';
+    }
     if (!hasCues) return '⏳ Felirat előkészítése...';
     return currentSubtitle || '▶ Indítsd el a videót a felirathoz';
   }
@@ -325,20 +376,54 @@ function VideoDetail() {
             {chapters.map((ch, i) => {
               const isActive = currentChapter === i;
               const duration = chapters[i + 1] ? chapters[i + 1].time - ch.time : null;
+              const analysis = chapterAnalyses[i];
+              const isExpanded = expandedAnalysis === i;
+
               return (
-                <li
-                  key={i}
-                  className={`chapters__item${isActive ? ' chapters__item--active' : ''}`}
-                  onClick={() => {
-                    if (playerRef.current?.seekTo) playerRef.current.seekTo(ch.time, true);
-                  }}
-                >
-                  <span className="chapters__time">{ch.timeStr}</span>
-                  <span className="chapters__title">{ch.title}</span>
-                  {duration !== null && (
-                    <span className="chapters__duration">
-                      {Math.floor(duration / 60)}:{String(duration % 60).padStart(2, '0')}
-                    </span>
+                <li key={i} className="chapters__item-wrap">
+                  <div
+                    className={`chapters__item${isActive ? ' chapters__item--active' : ''}`}
+                    onClick={() => {
+                      if (playerRef.current?.seekTo) playerRef.current.seekTo(ch.time, true);
+                    }}
+                  >
+                    <span className="chapters__time">{ch.timeStr}</span>
+                    <span className="chapters__title">{ch.title}</span>
+                    {duration !== null && (
+                      <span className="chapters__duration">
+                        {Math.floor(duration / 60)}:{String(duration % 60).padStart(2, '0')}
+                      </span>
+                    )}
+                    <button
+                      className={`chapters__ai-btn${isExpanded ? ' chapters__ai-btn--active' : ''}`}
+                      onClick={(e) => { e.stopPropagation(); handleAnalyzeChapter(i); }}
+                      title="AI Elemzés kérése"
+                    >
+                      {analysis?.status === 'loading'
+                        ? '⏳'
+                        : isExpanded
+                        ? '✕ Bezárás'
+                        : '🤖 AI Elemzés'}
+                    </button>
+                  </div>
+
+                  {isExpanded && (
+                    <div className={`chapter-analysis${analysis?.status === 'loading' ? ' chapter-analysis--loading' : ''}`}>
+                      {analysis?.status === 'loading' && (
+                        <div className="chapter-analysis__loading">
+                          <div className="spinner" style={{ width: 20, height: 20, borderWidth: 3 }} />
+                          <span>Elemzés folyamatban...</span>
+                        </div>
+                      )}
+                      {analysis?.status === 'done' && (
+                        <div className="chapter-analysis__content">
+                          {renderMarkdown(analysis.text)}
+                        </div>
+                      )}
+                      {analysis?.status === 'error' && (
+                        <div className="chapter-analysis__error">{analysis.text}</div>
+                      )}
+                    </div>
                   )}
                 </li>
               );
