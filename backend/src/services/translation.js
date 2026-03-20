@@ -1,8 +1,7 @@
 /**
  * @file translation.js
- * @description Magyar fordítás Google Translate-tel (ingyenes, kulcs/regisztráció/hitelkártya nélkül).
- * Rate limit védelem: progresszív várakozás + retry logika.
- * Normál használatban (1 videó/session) a rate limit nem jelent problémát.
+ * @description Magyar fordítás – elsődleges: MyMemory API (ingyenes, 50K kar/nap, nincs regisztráció)
+ * Fallback: Google Translate (@vitalets/google-translate-api)
  */
 
 import { translate } from '@vitalets/google-translate-api';
@@ -12,10 +11,29 @@ function sleep(ms) {
 }
 
 /**
- * Google Translate hívás rate limit detektálással és retry-jal.
- * "Too Many Requests" esetén vár (2s → 5s → 10s), majd újrapróbál.
- * @param {string} text - Fordítandó szöveg
- * @returns {Promise<string|null>} Fordítás vagy null hiba esetén
+ * MyMemory API – ingyenes, 50 000 karakter/nap, nincs API kulcs, nincs hitelkártya.
+ * @param {string} text
+ * @returns {Promise<string|null>}
+ */
+async function myMemoryTranslate(text) {
+  try {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|hu&de=powerbi.tracker@outlook.com`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const translated = data?.responseData?.translatedText;
+    // MyMemory néha visszaadja az eredeti szöveget ha nem tudja fordítani
+    if (!translated || translated === text) return null;
+    return translated;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Google Translate fallback – rate limit retry logikával.
+ * @param {string} text
+ * @returns {Promise<string|null>}
  */
 async function googleTranslate(text) {
   const RETRY_DELAYS = [2000, 5000, 10000];
@@ -36,12 +54,12 @@ async function googleTranslate(text) {
 }
 
 /**
- * Lefordít egy szöveget angolról magyarra.
- * Hiba esetén az eredeti szöveget adja vissza (graceful fallback).
+ * Fordítás: MyMemory → Google Translate fallback → null
  */
 async function translateText(text) {
   if (!text || !text.trim()) return null;
-  return (await googleTranslate(text)) ?? null; // null ha nem sikerült, NEM az eredeti angol szöveg
+  const result = (await myMemoryTranslate(text)) ?? (await googleTranslate(text)) ?? null;
+  return result;
 }
 
 /**
