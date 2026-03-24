@@ -87,8 +87,13 @@ function ImportVideo() {
             <p className="import-state__title">
               {result.titleHu || result.title}
             </p>
+            {result.processing && (
+              <p className="import-state__processing">
+                ⏳ Fordítás és AI elemzés háttérben folyamatban – pár perc múlva kész.
+              </p>
+            )}
             <Link to={`/video/${result.id}`} className="import-state__link">
-              Elemzés megtekintése →
+              Videó megtekintése →
             </Link>
           </div>
         </div>

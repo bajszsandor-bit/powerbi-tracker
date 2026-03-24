@@ -89,23 +89,22 @@ async function downloadTranscript(videoId, videoUrl) {
   const outputTemplate = resolve(TRANSCRIPTS_DIR, videoId);
   const expectedVtt = `${outputTemplate}.en.vtt`;
 
-  try {
-    await execFileAsync(
-      getYtdlpPath(),
-      [
-        videoUrl,
-        '--write-auto-sub',
-        '--sub-lang', 'en',
-        '--skip-download',
-        '--sub-format', 'vtt',
-        '-o', outputTemplate,
-        '--quiet',
-      ],
-      { timeout: 60_000 }
-    );
+  const BASE_SUB_ARGS = [
+    videoUrl, '--write-auto-sub', '--sub-lang', 'en',
+    '--skip-download', '--sub-format', 'vtt', '-o', outputTemplate, '--quiet',
+  ];
 
+  // Próbálja Android API-val (kevésbé rate-limitelt), majd sima fallback
+  for (const extraArgs of [['--extractor-args', 'youtube:player_client=android'], []]) {
+    try {
+      await execFileAsync(getYtdlpPath(), [...BASE_SUB_ARGS, ...extraArgs], { timeout: 60_000 });
+      if (existsSync(expectedVtt)) break; // siker
+    } catch { /* következő próba */ }
+  }
+
+  try {
     if (!existsSync(expectedVtt)) {
-      return null;
+      return { plainText: null, cues: [] };
     }
 
     const vttContent = readFileSync(expectedVtt, 'utf8');

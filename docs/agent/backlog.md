@@ -143,4 +143,17 @@
 
 ---
 
+### OUT-11 – Szinkronhang szinkronizáció és fordítás minőség javítás
+**Leírás:** Dinamikus beszédsebesség (Adaptive Rate) bevezetése a dubtracking-nél, javított felirat deduplikáció és hibatűrőbb batch fordítás.
+
+**Elfogadási kritériumok:**
+- [x] Backlog és terv elkészítve
+- [x] `dubtrack.js`: A hangsebesség dinamikusan igazodik az időablakhoz (max +40%).
+- [x] `dubtrack.js`: A `softTrim` csak végső esetben vág le szavakat.
+- [x] `translation.js`: Ha a batch fordítás sorrendje vagy száma hibás, automatikus fallback soronkénti fordításra.
+- [x] `goal.md` frissítve a Whisper és Dubbing funkciókkal.
+- [x] Manuális teszt: legalább 1 videó teljes újragenerálása és ellenőrzése.
+
+---
+
 > **Megjegyzés:** Új backlog elemet csak a fejlesztő adhat hozzá.

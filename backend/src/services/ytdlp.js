@@ -90,12 +90,18 @@ async function checkYtdlpInstalled() {
  * @returns {Promise<string>} A parancs stdout kimenete
  */
 async function runYtdlp(args) {
-  const { stdout } = await execFileAsync(getYtdlpPath(), args, {
-    timeout: YTDLP_TIMEOUT_MS,
-    maxBuffer: 50 * 1024 * 1024,
-    windowsHide: true,
-  });
-  return stdout;
+  try {
+    const { stdout } = await execFileAsync(getYtdlpPath(), args, {
+      timeout: YTDLP_TIMEOUT_MS,
+      maxBuffer: 50 * 1024 * 1024,
+      windowsHide: true,
+    });
+    return stdout;
+  } catch (err) {
+    // yt-dlp nem-nulla kilépési kód esetén is adhat valid JSON-t (pl. tagok-only videók a playlistben)
+    if (err.stdout && err.stdout.trim()) return err.stdout;
+    throw err;
+  }
 }
 
 /**
@@ -154,7 +160,7 @@ async function collectVideos() {
       if (source.type === 'search') {
         args = [source.query, '--dump-json', '--no-download', '--playlist-end', '5'];
       } else {
-        args = [source.url, '--dump-json', '--no-download', '--playlist-end', '1'];
+        args = [source.url, '--dump-json', '--no-download', '--playlist-end', '5'];
       }
 
       const raw = await runYtdlp(args);
@@ -189,7 +195,24 @@ async function collectVideos() {
  * @returns {Promise<import('../db/videoRepository.js').VideoInput | null>} Videó objektum vagy null
  */
 async function fetchSingleVideo(url) {
-  const raw = await runYtdlp([url, '--dump-json', '--no-download', '--no-playlist']);
+  const BASE_ARGS = [url, '--dump-json', '--no-download', '--no-playlist'];
+
+  // 1. Próba: Android API kliens – kevésbé rate-limitelt mint a web
+  try {
+    const raw = await runYtdlp([...BASE_ARGS, '--extractor-args', 'youtube:player_client=android']);
+    const videos = parseYtdlpOutput(raw);
+    if (videos.length > 0) return videos[0];
+  } catch { /* fallthrough */ }
+
+  // 2. Próba: Edge cookie – bot bypass (Edge ne legyen nyitva közben)
+  try {
+    const raw = await runYtdlp([...BASE_ARGS, '--cookies-from-browser', 'edge']);
+    const videos = parseYtdlpOutput(raw);
+    if (videos.length > 0) return videos[0];
+  } catch { /* fallthrough */ }
+
+  // 3. Próba: alap, cookie nélkül
+  const raw = await runYtdlp(BASE_ARGS);
   const videos = parseYtdlpOutput(raw);
   return videos[0] || null;
 }

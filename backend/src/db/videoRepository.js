@@ -228,4 +228,31 @@ function getImportedVideos() {
   ).all();
 }
 
-export { upsertVideos, getAllVideos, getVideoCount, updateTranscriptStatus, updateTranslations, updateDaxFunctions, getVideoById, getLastUpdated, updateAiSummary, markAsImported, getImportedVideos, updateTranscriptCues, updateChapters };
+/**
+ * Visszaadja a kapcsolódó videókat DAX függvény átfedés alapján.
+ * @param {string} videoId
+ * @param {number} limit
+ * @returns {object[]}
+ */
+function getRelatedVideos(videoId, limit = 4) {
+  const db = getDatabase();
+  const src = db.prepare('SELECT dax_functions FROM videos WHERE id = :id').get({ id: videoId });
+  if (!src?.dax_functions) return [];
+  const srcFns = JSON.parse(src.dax_functions);
+  if (!srcFns.length) return [];
+
+  const others = db.prepare(
+    "SELECT id, title, title_hu, thumbnail_url, channel_title, dax_functions FROM videos WHERE id != :id AND dax_functions IS NOT NULL AND dax_functions != '[]'"
+  ).all({ id: videoId });
+
+  const scored = others.map(v => {
+    const fns = JSON.parse(v.dax_functions || '[]');
+    const overlap = fns.filter(f => srcFns.includes(f)).length;
+    return { ...v, overlap };
+  }).filter(v => v.overlap > 0);
+
+  scored.sort((a, b) => b.overlap - a.overlap);
+  return scored.slice(0, limit);
+}
+
+export { upsertVideos, getAllVideos, getVideoCount, updateTranscriptStatus, updateTranslations, updateDaxFunctions, getVideoById, getLastUpdated, updateAiSummary, markAsImported, getImportedVideos, updateTranscriptCues, updateChapters, getRelatedVideos };

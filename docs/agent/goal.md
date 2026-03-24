@@ -36,9 +36,11 @@ megjeleníti a napi Top 10-et. Minden videónak saját oldala van, magyar fordí
 1. **Napi Top 10 videó** – score alapján rangsorolva (nézettség, like, frissesség, DAX tartalom)
 2. **Automatikus frissítés** – gép bekapcsolásakor fut, majd naponta egyszer
 3. **Videó saját oldal** – minden videónak `/video/:id` route-on saját részletes oldala
-4. **Magyar fordítás** – cím + leírás + felirat magyarul
-5. **DAX elemzés** – a feliratból kinyert DAX függvények listája példákkal
-6. **Keresés és szűrés** – témák szerint (DAX, vizualizáció, adatmodell stb.)
+4. **Magyar fordítás** – cím + leírás + felirat magyarul (Groq/Claude/DeepL)
+5. **Szinkronhang (Dubbing)** – automatikus magyar hanggenerálás (Edge TTS vagy XTTS v2 hangklónozás)
+6. **Whisper Átírás** – pontos feliratok generálása az eredeti videóból (Groq vagy helyi Faster-Whisper)
+7. **DAX elemzés** – a feliratból kinyert DAX függvények listája példákkal
+8. **Keresés és szűrés** – témák szerint (DAX, vizualizáció, adatmodell stb.)
 
 ## Videó forrás stratégia (yt-dlp alapú)
 

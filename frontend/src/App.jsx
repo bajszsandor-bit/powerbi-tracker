@@ -4,12 +4,15 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import Home from './pages/Home.jsx';
 import VideoDetail from './pages/VideoDetail.jsx';
 import Channels from './pages/Channels.jsx';
 import ImportVideo from './pages/ImportVideo.jsx';
 import Archive from './pages/Archive.jsx';
+import Search from './pages/Search.jsx';
+import Stats from './pages/Stats.jsx';
+import LearningPath from './pages/LearningPath.jsx';
 
 /**
  * App gyökér komponens.
@@ -17,6 +20,26 @@ import Archive from './pages/Archive.jsx';
  *
  * @returns {JSX.Element} Az alkalmazás gyökér eleme
  */
+function HeaderSearch() {
+  const [q, setQ] = useState('');
+  const navigate = useNavigate();
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (q.trim().length >= 2) navigate(`/search?q=${encodeURIComponent(q.trim())}`);
+  }
+  return (
+    <form className="header-search" onSubmit={handleSubmit}>
+      <input
+        className="header-search__input"
+        type="search"
+        placeholder="🔍 Keresés..."
+        value={q}
+        onChange={e => setQ(e.target.value)}
+      />
+    </form>
+  );
+}
+
 function App() {
   const [backendStatus, setBackendStatus] = useState('loading');
 
@@ -39,16 +62,13 @@ function App() {
           <Link to="/" className="app-header__nav-link">Top 10 Videók</Link>
           <Link to="/channels" className="app-header__nav-link">Top Csatornák</Link>
           <Link to="/archive" className="app-header__nav-link">📁 Archívum</Link>
+          <Link to="/stats" className="app-header__nav-link">📊 Statisztikák</Link>
+          <Link to="/learning-path" className="app-header__nav-link">🗺️ Útvonal</Link>
           <Link to="/import" className="app-header__nav-link app-header__nav-link--accent">+ Videó hozzáadása</Link>
         </nav>
-        <span
-          className={`app-header__status app-header__status--${backendStatus}`}
-        >
-          {backendStatus === 'ok'
-            ? 'Backend: OK'
-            : backendStatus === 'loading'
-            ? 'Csatlakozás...'
-            : 'Backend nem elérhető'}
+        <HeaderSearch />
+        <span className={`app-header__status app-header__status--${backendStatus}`}>
+          {backendStatus === 'ok' ? 'Backend: OK' : backendStatus === 'loading' ? 'Csatlakozás...' : 'Backend nem elérhető'}
         </span>
       </header>
       <Routes>
@@ -57,6 +77,9 @@ function App() {
         <Route path="/channels" element={<Channels />} />
         <Route path="/import" element={<ImportVideo />} />
         <Route path="/archive" element={<Archive />} />
+        <Route path="/search" element={<Search />} />
+        <Route path="/stats" element={<Stats />} />
+        <Route path="/learning-path" element={<LearningPath />} />
       </Routes>
     </div>
   );

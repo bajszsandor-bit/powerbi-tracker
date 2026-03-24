@@ -5,29 +5,30 @@
 ---
 
 ## Legutóbbi állapot
-
-**Elkészült iteráció:** OUT-10 ✅ PROJEKT KÉSZ
-
-**Dátum:** 2026-03-20
-
+ 
+**Elkészült iteráció:** OUT-11 ✅ SZINKRON ÉS FORDÍTÁS JAVÍTVA
+ 
+**Dátum:** 2026-03-24
+ 
 **Elvégzett munka:**
-- `frontend/src/pages/Home.jsx` – no-ytdlp állapot → lépéses telepítési útmutató (winget, manuális, macOS, Linux)
-- `frontend/src/index.css` – .install-guide stílusok
-- `README.md` – node:sqlite javítás, /api/status + /api/check-ytdlp dokumentálva
-- Teljes teszt suite: 75/75 unit + 10/10 e2e zöld
-
+- `backend/src/services/dubtrack.js` – Adaptív beszédsebesség (Adaptive Rate) +40%-ig, javított deduplikáció
+- `backend/src/services/translation.js` – Fallback soronkénti fordításra batch hiba vagy hiányzó ékezetek esetén
+- `docs/agent/goal.md` – Frissítve a Whisper és Dubbing funkciókkal
+- Backend és Frontend linter hibák (unused vars, eqeqeq) javítva
+ 
 **Technikai döntések:**
-- install-guide saját CSS osztályokkal, nem a home__state-re alapozva
-
+- Adaptív sebesség: ha a magyar TTS hosszabb az angol eredetinél, kiszámoljuk a szükséges gyorsítást (Edge TTS rate paraméter)
+- Szigorúbb magyar nyelv ellenőrzés (`looksHungarian`) ékezet-alapú regex-szel
+ 
 **Ami nem készült el:** –
-
-**Következő javasolt iteráció:** nincs – a projekt minden tervezett iterációja elkészült (OUT-01 – OUT-10)
-
+ 
+**Következő javasolt iteráció:** nincs – a projekt alapvető problémái javítva
+ 
 ---
 
-## Előző iteráció (OUT-09)
-
-**Elkészült iteráció:** OUT-09
+## Előző iteráció (OUT-10)
+ 
+**Elkészült iteráció:** OUT-10
 
 **Dátum:** 2026-03-20
 

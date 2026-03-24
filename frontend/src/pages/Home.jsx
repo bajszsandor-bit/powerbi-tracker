@@ -4,7 +4,7 @@
  * Tartalmaz szűrőt, frissítés gombot, betöltési és hibakezelési állapotot.
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 
 /**
@@ -23,6 +23,8 @@ function DaxBadge({ name }) {
  * @param {{ video: object }} props
  * @returns {JSX.Element}
  */
+const PROG_COLOR = { 'Tanulom': '#f59e0b', 'Kész': '#16a34a' };
+
 function VideoCard({ video }) {
   const daxFunctions = video.dax_functions
     ? JSON.parse(video.dax_functions)
@@ -30,6 +32,7 @@ function VideoCard({ video }) {
 
   const displayTitle = video.titleHu || video.title || '(Cím nélkül)';
   const score = typeof video.score === 'number' ? Math.round(video.score) : null;
+  const progress = localStorage.getItem(`pbi_progress_${video.id}`) || 'Nem kezdtem';
 
   const ytUrl = video.video_url || `https://www.youtube.com/watch?v=${video.id}`;
 
@@ -53,6 +56,11 @@ function VideoCard({ video }) {
         </Link>
         <p className="video-card__channel">{video.channel_title || '—'}</p>
         <div className="video-card__meta">
+          {progress !== 'Nem kezdtem' && (
+            <span className="video-card__progress-badge" style={{ background: PROG_COLOR[progress] + '20', color: PROG_COLOR[progress] }}>
+              ● {progress}
+            </span>
+          )}
           {score !== null && score > 0 && (
             <span className="video-card__score" title="Relevancia pontszám">
               ⭐ {score} pont
@@ -111,6 +119,42 @@ function Home() {
   const [errorMessage, setErrorMessage] = useState('');
   const [filter, setFilter] = useState('all'); // 'all' | 'dax'
   const [refreshing, setRefreshing] = useState(false);
+  const [translateProg, setTranslateProg] = useState(null); // null | { running, done, total, current }
+  const translatePollRef = useRef(null);
+  const [genChaptersStatus, setGenChaptersStatus] = useState('idle'); // idle | running | done
+
+  // Értesítések – új videó figyelő
+  useEffect(() => {
+    async function checkNewVideos() {
+      try {
+        const res = await fetch('/api/stats');
+        if (!res.ok) return;
+        const data = await res.json();
+        const newCount = data.total || 0;
+        const knownCount = parseInt(localStorage.getItem('pbi_known_video_count') || '0', 10);
+        if (knownCount > 0 && newCount > knownCount) {
+          const diff = newCount - knownCount;
+          if (Notification.permission === 'granted') {
+            new Notification('Power BI Tracker – Új videók!', {
+              body: `${diff} új videó érkezett a csatornákra 🎬`,
+              icon: '/favicon.ico',
+            });
+          }
+        }
+        if (newCount > 0) localStorage.setItem('pbi_known_video_count', String(newCount));
+      } catch { /* silent */ }
+    }
+
+    // Engedélykérés + első ellenőrzés
+    if (Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+    checkNewVideos();
+
+    // 30 percenkénti ellenőrzés
+    const notifInterval = setInterval(checkNewVideos, 30 * 60 * 1000);
+    return () => clearInterval(notifInterval);
+  }, []);
 
   /** Top 10 lista betöltése a backendről. */
   const loadVideos = useCallback(async () => {
@@ -133,6 +177,25 @@ function Home() {
     loadVideos();
   }, [loadVideos]);
 
+  // Fordítás folyamat polling
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const res = await fetch('/api/translate-all/progress');
+        if (!res.ok) return;
+        const data = await res.json();
+        setTranslateProg(data.total > 0 ? data : null);
+        if (!data.running && data.total > 0) {
+          clearInterval(translatePollRef.current);
+          setTimeout(() => setTranslateProg(null), 4000);
+        }
+      } catch { /* silent */ }
+    };
+    translatePollRef.current = setInterval(poll, 1500);
+    poll();
+    return () => clearInterval(translatePollRef.current);
+  }, []);
+
   /** Frissítés gomb: POST /api/refresh */
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -153,6 +216,19 @@ function Home() {
       setErrorMessage(err.message);
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const handleGenerateAllChapters = async () => {
+    setGenChaptersStatus('running');
+    try {
+      const res = await fetch('/api/videos/generate-chapters-all', { method: 'POST' });
+      const data = await res.json();
+      setGenChaptersStatus('done');
+      setTimeout(() => setGenChaptersStatus('idle'), 5000);
+      console.log(`Fejezet generálás indul: ${data.total} videóhoz`);
+    } catch {
+      setGenChaptersStatus('idle');
     }
   };
 
@@ -205,8 +281,40 @@ function Home() {
           >
             {refreshing ? 'Frissítés...' : '🔄 Frissítés most'}
           </button>
+          <button
+            className="refresh-btn"
+            onClick={handleGenerateAllChapters}
+            disabled={genChaptersStatus === 'running'}
+            title="Fejezetek automatikus generálása minden videóhoz, aminél még nincs"
+          >
+            {genChaptersStatus === 'running' ? '⏳ Fejezetek...' : genChaptersStatus === 'done' ? '✅ Kész!' : '✨ Fejezetek generálása'}
+          </button>
         </div>
       </div>
+
+      {translateProg && (
+        <div className="translate-progress">
+          <div className="translate-progress__header">
+            <span className="translate-progress__label">
+              {translateProg.running ? '🇭🇺 Fordítás folyamatban...' : '✅ Fordítás kész!'}
+            </span>
+            <span className="translate-progress__count">
+              {translateProg.done} / {translateProg.total}
+            </span>
+          </div>
+          <div className="translate-progress__bar-bg">
+            <div
+              className="translate-progress__bar-fill"
+              style={{ width: `${Math.round((translateProg.done / translateProg.total) * 100)}%` }}
+            />
+          </div>
+          {translateProg.running && translateProg.current && (
+            <div className="translate-progress__current" title={translateProg.current}>
+              {translateProg.current.length > 60 ? translateProg.current.slice(0, 60) + '…' : translateProg.current}
+            </div>
+          )}
+        </div>
+      )}
 
       {status === 'loading' && (
         <div className="home__state">
