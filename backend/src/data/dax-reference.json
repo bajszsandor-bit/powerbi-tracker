@@ -1,0 +1,238 @@
+{
+  "CALCULATE": {
+    "description": "Egy kifejezést értékel ki módosított szűrőkontextusban.",
+    "example": "CALCULATE(SUM(Sales[Amount]), Sales[Region] = \"North\")"
+  },
+  "CALCULATETABLE": {
+    "description": "Szűrő alkalmazásával értéktáblát ad vissza.",
+    "example": "CALCULATETABLE(Sales, Sales[Year] = 2024)"
+  },
+  "SUM": {
+    "description": "Egy oszlop összes számát összeadja.",
+    "example": "SUM(Sales[Amount])"
+  },
+  "SUMX": {
+    "description": "Egy tábla minden sorára kiértékelt kifejezés összegét adja vissza.",
+    "example": "SUMX(Sales, Sales[Quantity] * Sales[Price])"
+  },
+  "COUNT": {
+    "description": "Egy oszlopban lévő numerikus értékek számát számolja meg.",
+    "example": "COUNT(Sales[OrderID])"
+  },
+  "COUNTA": {
+    "description": "Egy oszlopban lévő nem üres értékek számát számolja meg.",
+    "example": "COUNTA(Sales[CustomerName])"
+  },
+  "COUNTX": {
+    "description": "Azon sorokat számolja meg, ahol a kifejezés nem üres értéket ad vissza.",
+    "example": "COUNTX(Sales, IF(Sales[Amount] > 100, 1))"
+  },
+  "COUNTROWS": {
+    "description": "Egy tábla sorainak számát adja vissza.",
+    "example": "COUNTROWS(Sales)"
+  },
+  "COUNTBLANK": {
+    "description": "Egy oszlopban lévő üres cellák számát adja vissza.",
+    "example": "COUNTBLANK(Sales[Region])"
+  },
+  "DISTINCTCOUNT": {
+    "description": "Egy oszlopban lévő egyedi értékek számát adja vissza.",
+    "example": "DISTINCTCOUNT(Sales[CustomerID])"
+  },
+  "AVERAGE": {
+    "description": "Egy oszlop összes számának számtani átlagát adja vissza.",
+    "example": "AVERAGE(Sales[Amount])"
+  },
+  "AVERAGEX": {
+    "description": "Egy tábla minden sorára kiértékelt kifejezés átlagát számítja ki.",
+    "example": "AVERAGEX(Sales, Sales[Quantity] * Sales[Price])"
+  },
+  "MIN": {
+    "description": "Egy oszlop legkisebb numerikus értékét adja vissza.",
+    "example": "MIN(Sales[Amount])"
+  },
+  "MINX": {
+    "description": "Egy táblán kiértékelt kifejezés legkisebb értékét adja vissza.",
+    "example": "MINX(Sales, Sales[Amount])"
+  },
+  "MAX": {
+    "description": "Egy oszlop legnagyobb numerikus értékét adja vissza.",
+    "example": "MAX(Sales[Amount])"
+  },
+  "MAXX": {
+    "description": "Egy táblán kiértékelt kifejezés legnagyobb értékét adja vissza.",
+    "example": "MAXX(Sales, Sales[Amount])"
+  },
+  "FILTER": {
+    "description": "Egy másik tábla részhalmazát képviselő táblát ad vissza.",
+    "example": "FILTER(Sales, Sales[Amount] > 1000)"
+  },
+  "ALL": {
+    "description": "Egy tábla összes sorát adja vissza, figyelmen kívül hagyva minden szűrőt.",
+    "example": "ALL(Sales[Region])"
+  },
+  "ALLEXCEPT": {
+    "description": "Eltávolít minden kontextusszűrőt, kivéve a megadott oszlopokra alkalmazottakat.",
+    "example": "ALLEXCEPT(Sales, Sales[Region])"
+  },
+  "ALLSELECTED": {
+    "description": "Az aktuális kontextuson kívül alkalmazott szűrőket figyelembe véve adja vissza a tábla összes sorát.",
+    "example": "ALLSELECTED(Sales[Region])"
+  },
+  "VALUES": {
+    "description": "Egy oszlop egyedi értékeit tartalmazó egyoszlopos táblát ad vissza.",
+    "example": "VALUES(Sales[Region])"
+  },
+  "DISTINCT": {
+    "description": "Egy oszlop vagy kifejezés egyedi értékeit tartalmazó egyoszlopos táblát ad vissza.",
+    "example": "DISTINCT(Sales[CustomerID])"
+  },
+  "RELATED": {
+    "description": "Egy másik táblából adja vissza a kapcsolaton keresztül elérhető értéket.",
+    "example": "RELATED(Customer[Country])"
+  },
+  "RELATEDTABLE": {
+    "description": "Egy kapcsolódó táblából adja vissza az aktuális sorhoz tartozó összes sort.",
+    "example": "RELATEDTABLE(Sales)"
+  },
+  "IF": {
+    "description": "Feltételt vizsgál, és igaz esetén az egyik, hamis esetén a másik értéket adja vissza.",
+    "example": "IF(Sales[Amount] > 1000, \"Magas\", \"Alacsony\")"
+  },
+  "IFERROR": {
+    "description": "Ha egy kifejezés hibát ad, a megadott értéket adja vissza helyette.",
+    "example": "IFERROR(Sales[Amount] / Sales[Quantity], 0)"
+  },
+  "SWITCH": {
+    "description": "Egy kifejezést értékek listájával vet össze, és az első egyezés eredményét adja vissza.",
+    "example": "SWITCH(Sales[Region], \"Észak\", 1, \"Dél\", 2, 0)"
+  },
+  "DIVIDE": {
+    "description": "Osztást végez, és nullával való osztás esetén alternatív eredményt vagy BLANK értéket ad vissza.",
+    "example": "DIVIDE(Sales[Profit], Sales[Revenue], 0)"
+  },
+  "RANKX": {
+    "description": "Egy tábla minden sorára visszaadja egy szám rangsorát a számok listájában.",
+    "example": "RANKX(ALL(Products), [Total Sales])"
+  },
+  "TOPN": {
+    "description": "Egy megadott tábla legjobb N sorát adja vissza.",
+    "example": "TOPN(10, Sales, Sales[Amount], DESC)"
+  },
+  "EARLIER": {
+    "description": "Egy oszlop aktuális értékét adja vissza a külső kiértékelési menetből.",
+    "example": "EARLIER(Sales[Amount])"
+  },
+  "HASONEVALUE": {
+    "description": "IGAZ értéket ad vissza, ha egy oszlop kontextusa egyetlen értékre szűkült.",
+    "example": "IF(HASONEVALUE(Sales[Region]), VALUES(Sales[Region]), \"Több\")"
+  },
+  "SELECTEDVALUE": {
+    "description": "Visszaadja az értéket, ha egy oszlop kontextusa egyetlen értékre szűkült.",
+    "example": "SELECTEDVALUE(Sales[Region], \"Minden régió\")"
+  },
+  "FIRSTNONBLANK": {
+    "description": "Egy oszlop első olyan értékét adja vissza, amelyre a kifejezés nem üres.",
+    "example": "FIRSTNONBLANK(Sales[Date], Sales[Amount])"
+  },
+  "LASTNONBLANK": {
+    "description": "Egy oszlop utolsó olyan értékét adja vissza, amelyre a kifejezés nem üres.",
+    "example": "LASTNONBLANK(Sales[Date], Sales[Amount])"
+  },
+  "DATEADD": {
+    "description": "Dátumok táblázatát adja vissza, meghatározott időközönként eltolva.",
+    "example": "CALCULATE([Total Sales], DATEADD(Date[Date], -1, YEAR))"
+  },
+  "DATESYTD": {
+    "description": "Az év elejétől a szűrőkontextus utolsó dátumáig terjedő dátumokat adja vissza.",
+    "example": "CALCULATE(SUM(Sales[Amount]), DATESYTD(Date[Date]))"
+  },
+  "DATESMTD": {
+    "description": "A hónap elejétől a szűrőkontextus utolsó dátumáig terjedő dátumokat adja vissza.",
+    "example": "CALCULATE(SUM(Sales[Amount]), DATESMTD(Date[Date]))"
+  },
+  "DATESQTD": {
+    "description": "A negyedév elejétől a szűrőkontextus utolsó dátumáig terjedő dátumokat adja vissza.",
+    "example": "CALCULATE(SUM(Sales[Amount]), DATESQTD(Date[Date]))"
+  },
+  "SAMEPERIODLASTYEAR": {
+    "description": "Az előző év aktuális kontextusnak megfelelő dátumait adja vissza.",
+    "example": "CALCULATE([Total Sales], SAMEPERIODLASTYEAR(Date[Date]))"
+  },
+  "TOTALYTD": {
+    "description": "Egy kifejezés év elejétől számított értékét számítja ki.",
+    "example": "TOTALYTD(SUM(Sales[Amount]), Date[Date])"
+  },
+  "TOTALMTD": {
+    "description": "Egy kifejezés hónap elejétől számított értékét számítja ki.",
+    "example": "TOTALMTD(SUM(Sales[Amount]), Date[Date])"
+  },
+  "PREVIOUSYEAR": {
+    "description": "Az előző év összes dátumát adja vissza az aktuális szűrőkontextusban.",
+    "example": "CALCULATE([Total Sales], PREVIOUSYEAR(Date[Date]))"
+  },
+  "PREVIOUSMONTH": {
+    "description": "Az előző hónap összes dátumát adja vissza az aktuális szűrőkontextusban.",
+    "example": "CALCULATE([Total Sales], PREVIOUSMONTH(Date[Date]))"
+  },
+  "PARALLELPERIOD": {
+    "description": "Egy adott számú időközzel eltolt párhuzamos időszakot tartalmazó táblát ad vissza.",
+    "example": "CALCULATE([Total Sales], PARALLELPERIOD(Date[Date], -1, YEAR))"
+  },
+  "USERELATIONSHIP": {
+    "description": "Meghatározza, hogy melyik kapcsolatot kell használni egy adott számításban.",
+    "example": "CALCULATE([Total Sales], USERELATIONSHIP(Sales[ShipDate], Date[Date]))"
+  },
+  "VAR": {
+    "description": "Egy kifejezés eredményét névvel ellátott változóban tárolja (RETURN-nel együtt használandó).",
+    "example": "VAR TotalSales = SUM(Sales[Amount]) RETURN TotalSales * 1.1"
+  },
+  "RETURN": {
+    "description": "Egy VAR kifejezés eredményét adja vissza.",
+    "example": "VAR x = 10 RETURN x * 2"
+  },
+  "CONCATENATE": {
+    "description": "Két szöveges karakterláncot fűz össze eggyé.",
+    "example": "CONCATENATE(Customer[FirstName], \" \", Customer[LastName])"
+  },
+  "CONCATENATEX": {
+    "description": "Egy tábla minden sorára kiértékelt kifejezés eredményeit fűzi össze.",
+    "example": "CONCATENATEX(Products, Products[Name], \", \")"
+  },
+  "FORMAT": {
+    "description": "Egy értéket a megadott számformátumban szöveggé alakít.",
+    "example": "FORMAT(Sales[Amount], \"#,##0.00\")"
+  },
+  "BLANK": {
+    "description": "Üres értéket ad vissza.",
+    "example": "IF(Sales[Amount] = 0, BLANK(), Sales[Amount])"
+  },
+  "ISBLANK": {
+    "description": "Megvizsgálja, hogy egy érték üres-e, és IGAZ vagy HAMIS értéket ad vissza.",
+    "example": "ISBLANK(Sales[Region])"
+  },
+  "LOOKUPVALUE": {
+    "description": "Egy megadott feltételnek megfelelő sorból adja vissza egy oszlop értékét.",
+    "example": "LOOKUPVALUE(Products[Price], Products[ID], Sales[ProductID])"
+  },
+  "GENERATE": {
+    "description": "Visszaadja az 1. tábla minden sora és a 2. tábla kifejezésének Descartes-szorzatát.",
+    "example": "GENERATE(Products, FILTER(Sales, Sales[ProductID] = Products[ID]))"
+  },
+  "CROSSJOIN": {
+    "description": "A megadott táblák keresztbe szorzatát tartalmazó táblát ad vissza.",
+    "example": "CROSSJOIN(Products, Regions)"
+  },
+  "TREATAS": {
+    "description": "Egy tábla értékeit szűrőként alkalmazza egy nem kapcsolódó tábla oszlopaira.",
+    "example": "TREATAS(VALUES(Sales[ProductID]), Products[ID])"
+  },
+  "CONTAINS": {
+    "description": "IGAZ értéket ad vissza, ha a tábla tartalmaz sort a megadott oszlopértékekkel.",
+    "example": "CONTAINS(Products, Products[Category], \"Elektronika\")"
+  },
+  "KEEPFILTERS": {
+    "description": "Módosítja a szűrők alkalmazási módját egy CALCULATE függvény kiértékelésekor.",
+    "example": "CALCULATE([Total Sales], KEEPFILTERS(Sales[Region] = \"Észak\"))"
+  }
+}

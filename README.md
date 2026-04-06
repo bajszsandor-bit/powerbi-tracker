@@ -90,6 +90,12 @@ curl -X POST http://localhost:3001/api/refresh
 
 # Backend státusz
 curl http://localhost:3001/api/health
+
+# Ütemező státusz (lastRefresh, nextRun)
+curl http://localhost:3001/api/status
+
+# yt-dlp telepítési állapot
+curl http://localhost:3001/api/check-ytdlp
 ```
 
 ---
@@ -117,7 +123,7 @@ powerbi-tracker/
 |-------|-------------|
 | Frontend | React 18 + Vite |
 | Backend | Node.js + Express |
-| Adatbázis | SQLite (better-sqlite3) |
+| Adatbázis | SQLite (node:sqlite – Node.js beépített) |
 | Videó gyűjtés | yt-dlp |
 | Fordítás | @vitalets/google-translate-api |
 | Ütemező | node-cron |

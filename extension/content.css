@@ -1,0 +1,22 @@
+/* content.css - YouTube injektált stílusok */
+.pbi-dub-btn {
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 18px;
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 500;
+    height: 36px;
+    cursor: pointer;
+    font-family: "Roboto", "Arial", sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 8px;
+    transition: background-color 0.2s;
+}
+.pbi-dub-btn:hover { background-color: #dc2626; }
+.pbi-dub-btn.dub-loading { background-color: #f59e0b; cursor: wait; }
+.pbi-dub-btn.dub-ready { background-color: #10b981; }
+.pbi-dub-btn svg { width: 18px; height: 18px; fill: currentColor; }
