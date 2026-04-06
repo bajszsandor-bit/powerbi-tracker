@@ -7,13 +7,14 @@ import express, { Router } from 'express';
 import { getAllVideos, getVideoById, getLastUpdated, updateDaxFunctions, updateTranslations, updateAiSummary, markAsImported, getImportedVideos, updateTranscriptCues, updateChapters, getRelatedVideos } from '../db/videoRepository.js';
 import { getTop10 } from '../services/scoring.js';
 import { getDaxReference, extractDaxFunctions } from '../services/daxAnalyzer.js';
-import { checkYtdlpInstalled, collectVideos, fetchSingleVideo } from '../services/ytdlp.js';
+import { checkYtdlpInstalled, fetchSingleVideo } from '../services/ytdlp.js';
 import { upsertVideos } from '../db/videoRepository.js';
 import { translateVideo, translateCues } from '../services/translation.js';
 import { generateAiSummary } from '../services/aiSummary.js';
 import { downloadTranscript } from '../services/transcript.js';
 import { transcribeAudio, transcribeLocalAudio, transcribeWithFlask, ensureFlaskRunning } from '../services/transcribe.js';
 import { generateDubtrack, dubtrackExists, getDubtrackPath } from '../services/dubtrack.js';
+import { runRefresh } from '../services/scheduler.js';
 import fsPromises from 'fs/promises';
 import os from 'os';
 import path from 'path';
@@ -236,65 +237,13 @@ router.post('/refresh', async (req, res, next) => {
       });
     }
 
-    const videos = await collectVideos();
-    const inserted = upsertVideos(videos);
+    // Elindítjuk a frissítést a háttérben
+    runRefresh().catch(err => console.error('[REFRESH] Háttér hiba:', err.message));
 
-    // Minden frissen gyűjtött videó elemzése háttérben (nem blokkolja a választ)
     res.json({
-      collected: videos.length,
-      inserted,
-      total: getAllVideos().length,
-      lastUpdated: getLastUpdated(),
+      message: 'Frissítés elindítva a háttérben.',
+      status: 'running'
     });
-
-    // DAX elemzés + magyar fordítás háttérben (teljes archívum + új videók)
-    (async () => {
-      const isHu = (t) => t && /[áéíóöőúüű]/i.test(t);
-
-      // 1. DAX kinyerés az új videókhoz
-      for (const video of videos) {
-        try {
-          const saved = getVideoById(video.id);
-          const text = `${video.title || ''} ${video.description || ''} ${saved?.ai_summary_hu || ''} ${saved?.transcript_hu || ''}`;
-          updateDaxFunctions(video.id, extractDaxFunctions(text));
-        } catch { /* egyedi hiba nem állítja le */ }
-      }
-
-      // 2. Teljes archívum fordítása – minden videó ahol hiányzik a magyar cím
-      const allVideos = getAllVideos();
-      const untranslated = allVideos.filter(v => !isHu(v.title_hu));
-      for (const video of untranslated) {
-        try {
-          const { titleHu, descriptionHu } = await translateVideo({
-            id: video.id, title: video.title, description: video.description, title_hu: null,
-          });
-          if (isHu(titleHu)) {
-            updateTranslations(video.id, {
-              titleHu,
-              descriptionHu: isHu(descriptionHu) ? descriptionHu : video.description_hu,
-              transcriptHu: null,
-            });
-          }
-          await new Promise(r => setTimeout(r, 500));
-        } catch { /* egyedi hiba nem állítja le */ }
-      }
-
-      // 3. AI összefoglaló az új videókhoz
-      for (const video of videos) {
-        try {
-          const fresh = getVideoById(video.id);
-          if (fresh && !isHu(fresh.ai_summary_hu)) {
-            const summary = await generateAiSummary({
-              title: video.title,
-              channel_title: video.channelTitle,
-              description: video.description,
-              description_hu: fresh.description_hu,
-            });
-            if (summary && isHu(summary)) updateAiSummary(video.id, summary);
-          }
-        } catch { /* egyedi hiba nem állítja le */ }
-      }
-    })();
   } catch (err) {
     next(err);
   }

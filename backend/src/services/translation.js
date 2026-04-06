@@ -45,6 +45,24 @@ ${dictCtx ? '- ' + dictCtx.split('\n').join('\n- ') : ''}
 ${lines.map((l, i) => `${i + 1}. ${l}`).join('\n')}`;
 };
 
+function extractNumberedLines(rawText) {
+  return rawText.split('\n')
+    // Remove "1. ", "1) ", "**1.** " type list bullets
+    .map(l => l.replace(/^(?:\*\*)?\d+[.)]\s*(?:\*\*)?/, '').trim())
+    .filter(l => l.length > 0);
+}
+
+const EN_STOPWORDS = /\b(the|is|are|was|were|a|an|of|to|in|for|with|on|at|by|from)\b/i;
+
+/** Magyar szöveg-e? (legalább egy ékezetes betű, VAGY nincsenek benne angol stop szavak) */
+function looksHungarian(t) {
+  if (!t) return false;
+  if (/[áéíóöőúüű]/i.test(t)) return true;
+  // Ha nincs ékezetes magánhangzó, de nincs benne tipikus angol stop word se, fogadjuk el magyarnak
+  if (!EN_STOPWORDS.test(t)) return true;
+  return false;
+}
+
 /** Claude-haiku – csak ha van API kulcs */
 async function claudeTranslate(text) {
   try {
@@ -57,6 +75,22 @@ async function claudeTranslate(text) {
     });
     const t = r.content[0]?.text?.trim();
     return (t && t !== text) ? t : null;
+  } catch { return null; }
+}
+
+/** Claude kötegelt felirat fordításhoz, CUE_TRANSLATE_PROMPT-ot használva */
+async function claudeTranslateCues(lines) {
+  try {
+    if (!process.env.ANTHROPIC_API_KEY) return null;
+    const ai = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const r = await ai.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1500,
+      messages: [{ role: 'user', content: CUE_TRANSLATE_PROMPT(lines) }],
+    });
+    const raw = r.content[0]?.text?.trim();
+    if (!raw) return null;
+    return extractNumberedLines(raw);
   } catch { return null; }
 }
 
@@ -128,17 +162,10 @@ async function groqTranslateCues(lines) {
       const raw = (await res.json())?.choices?.[0]?.message?.content?.trim();
       if (!raw) continue;
 
-      // Számozott sorok eltávolítása: "1. szöveg" → "szöveg"
-      const parts = raw.split('\n')
-        .map(l => l.replace(/^\d+[.)]\s*/, '').trim())
-        .filter(l => l.length > 0);
+      const parts = extractNumberedLines(raw);
 
       if (parts.length === lines.length) return parts;
-      // Ha közel egyforma (±1), fogadjuk el (hiányzó sort pótoljuk)
-      if (Math.abs(parts.length - lines.length) <= 1) {
-        while (parts.length < lines.length) parts.push('');
-        return parts.slice(0, lines.length);
-      }
+      // Nincs engedmény, nem fejeljük meg üres tagekkel. Fallback jön!
     } catch { /* következő model */ }
   }
   return null;
@@ -187,17 +214,12 @@ async function googleTranslate(text) {
   return null;
 }
 
-/** Magyar szöveg-e? (legalább egy ékezetes betű) */
-function looksHungarian(t) {
-  return t && /[áéíóöőúüű]/i.test(t);
-}
-
 /**
  * Fő fordítás: Claude → DeepL → Groq → MyMemory → LibreTranslate → Google
  * Minden lépésnél ellenőrzi, hogy a kimenet valóban magyar-e.
  */
 async function translateText(text) {
-  if (!text || !text.trim()) return null;
+  if (!text || !text.trim()) return text;
   const candidates = [
     () => claudeTranslate(text),
     () => deeplTranslate(text),
@@ -232,7 +254,7 @@ async function translateVideo(video) {
 
 /**
  * VTT cue-ok fordítása csoportokban.
- * Cue fordítás sorrend: Claude → Groq → Ollama → MyMemory → LibreTranslate
+ * Cue fordítás sorrend: Groq Batch → Claude Batch → felezett Batch → SoronkéntiFallback
  */
 async function translateCues(cues, maxCues = 200) {
   if (!cues || !cues.length) return [];
@@ -242,36 +264,35 @@ async function translateCues(cues, maxCues = 200) {
     .slice(0, maxCues)
     .filter(c => (c.end - c.start) >= 0.15 && c.text?.trim());
 
-  const CHUNK = 8; // kisebb chunk = pontosabb sorszám egyezés = kevesebb mismatch
+  const chunkQueue = [];
+  const CHUNK_SIZE = 8;
+  for (let i = 0; i < filtered.length; i += CHUNK_SIZE) {
+    chunkQueue.push(filtered.slice(i, i + CHUNK_SIZE));
+  }
+
   const result = [];
 
-  for (let i = 0; i < filtered.length; i += CHUNK) {
-    const chunk = filtered.slice(i, i + CHUNK);
+  while (chunkQueue.length > 0) {
+    const chunk = chunkQueue.shift();
     const lines = chunk.map(c => c.text);
 
-    // 1. Groq batch fordítás (string[] visszatérés)
+    // 1. Groq batch fordítás
     let parts = await groqTranslateCues(lines);
 
     // 2. Ha Groq batch nem sikerült → Claude batch
-    if (!parts) {
-      const combined = lines.join('\n');
-      const batchResult = await claudeTranslate(combined);
-      if (batchResult) {
-        parts = batchResult.split('\n')
-          .map(l => l.replace(/^\d+[.)]\s*/, '').trim())
-          .filter(l => l.length > 0);
-        if (parts.length !== lines.length) parts = null; // sorszám nem stimmel
-      }
+    if (!parts || parts.length !== lines.length) {
+      parts = await claudeTranslateCues(lines);
     }
 
-    // 3. Ha batch fordítás rendben van → használjuk
+    // 3. Ha batch fordítás rendben van méretileg → használjuk
     if (parts && parts.length === lines.length) {
       let containsEnglish = false;
       const processed = [];
       for (let j = 0; j < chunk.length; j++) {
         const t = parts[j]?.trim();
-        // Ha a fordítás gyanúsan angol maradt (nincs benne magyar karakter, de az eredetiben voltak kisbetűk)
-        if (!looksHungarian(t) && /[a-z]/.test(lines[j])) {
+        // Ha a fordítás gyanúsan angol maradt (stop words)
+        // Biztosítja hogy "Power BI" önmagában jó maradjon, de a "the user" angol maradjon
+        if (!looksHungarian(t) && EN_STOPWORDS.test(t)) {
           containsEnglish = true;
           break;
         }
@@ -281,21 +302,27 @@ async function translateCues(cues, maxCues = 200) {
 
       if (!containsEnglish) {
         result.push(...processed);
-        if (i + CHUNK < filtered.length) await sleep(600);
+        if (chunkQueue.length > 0) await sleep(600);
         continue; // Sikerült a batch
       }
     }
 
-    // 4. Fallback: Soronkénti fordítás – ha a batch hibás vagy angol maradt
-    console.log(`[TRANSLATE] Batch hiba a(z) ${i}. indexnél, soronkénti fallback...`);
-    for (let j = 0; j < chunk.length; j++) {
-      const t = await translateText(lines[j]);
-      const fixed = fixTechTerms(t || lines[j], lines[j]);
-      result.push({ start: chunk[j].start, end: chunk[j].end, text: fixed });
-      if (j < chunk.length - 1) await sleep(300);
+    // 4. Batch hiba esetén felezzük a feladatot
+    if (chunk.length > 1) {
+      console.log(`[TRANSLATE] Batch hiba (${chunk.length} sor), felezés és újrapróbálkozás...`);
+      const mid = Math.ceil(chunk.length / 2);
+      chunkQueue.unshift(chunk.slice(mid));
+      chunkQueue.unshift(chunk.slice(0, mid));
+      await sleep(1000);
+      continue;
     }
 
-    if (i + CHUNK < filtered.length) await sleep(600);
+    // 5. Még az 1 elemű "batch" (tehát soronkénti) is elbukott batch API szinten -> marad a full fallback
+    console.log(`[TRANSLATE] Hiba a legkisebb egységnél is, soronkénti fallback: ${lines[0]}`);
+    const t = await translateText(lines[0]);
+    const fixed = fixTechTerms(t || lines[0], lines[0]);
+    result.push({ start: chunk[0].start, end: chunk[0].end, text: fixed });
+    if (chunkQueue.length > 0) await sleep(300);
   }
 
   return result;

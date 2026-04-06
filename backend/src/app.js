@@ -14,11 +14,11 @@ import { getSchedulerStatus } from './services/scheduler.js';
 
 const app = express();
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+
 
 app.use(
   cors({
-    origin: FRONTEND_URL,
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type'],
   })
@@ -53,10 +53,12 @@ app.get('/api/status', (req, res) => {
  */
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  if (process.env.NODE_ENV !== 'production') {
-    console.error('[ERROR]', err.message);
-  }
-  res.status(500).json({ error: 'Belső szerverhiba', message: err.message });
+  console.error('[ERROR]', err.message);
+  const isProd = process.env.NODE_ENV === 'production';
+  res.status(500).json({
+    error: 'Belső szerverhiba',
+    message: isProd ? 'Kérjük próbáld újra.' : err.message,
+  });
 });
 
 export default app;

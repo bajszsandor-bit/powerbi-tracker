@@ -4,7 +4,7 @@
  * Tartalmaz szűrőt, frissítés gombot, betöltési és hibakezelési állapotot.
  */
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 
 /**
@@ -26,9 +26,12 @@ function DaxBadge({ name }) {
 const PROG_COLOR = { 'Tanulom': '#f59e0b', 'Kész': '#16a34a' };
 
 function VideoCard({ video }) {
-  const daxFunctions = video.dax_functions
-    ? JSON.parse(video.dax_functions)
-    : [];
+  let daxFunctions = [];
+  try {
+    if (video.dax_functions) daxFunctions = JSON.parse(video.dax_functions);
+  } catch (e) {
+    console.warn(`Hibás DAX JSON a videónál (${video.id}):`, e);
+  }
 
   const displayTitle = video.titleHu || video.title || '(Cím nélkül)';
   const score = typeof video.score === 'number' ? Math.round(video.score) : null;
@@ -120,8 +123,8 @@ function Home() {
   const [filter, setFilter] = useState('all'); // 'all' | 'dax'
   const [refreshing, setRefreshing] = useState(false);
   const [translateProg, setTranslateProg] = useState(null); // null | { running, done, total, current }
-  const translatePollRef = useRef(null);
   const [genChaptersStatus, setGenChaptersStatus] = useState('idle'); // idle | running | done
+  const [refreshStatus, setRefreshStatus] = useState(null); // null | { running, progress, total, lastMessage }
 
   // Értesítések – új videó figyelő
   useEffect(() => {
@@ -177,24 +180,43 @@ function Home() {
     loadVideos();
   }, [loadVideos]);
 
-  // Fordítás folyamat polling
+  // Állapot polling (frissítés + fordítás)
+  // Aktív futás esetén 1.5s, egyébként 8s – akkumulátor és hálózat kímélése mobilon
   useEffect(() => {
+    let timer;
+
     const poll = async () => {
       try {
-        const res = await fetch('/api/translate-all/progress');
-        if (!res.ok) return;
-        const data = await res.json();
-        setTranslateProg(data.total > 0 ? data : null);
-        if (!data.running && data.total > 0) {
-          clearInterval(translatePollRef.current);
-          setTimeout(() => setTranslateProg(null), 4000);
+        // 1. Scheduler állapot (frissítés)
+        const resStat = await fetch('/api/status');
+        if (resStat.ok) {
+          const data = await resStat.json();
+          setRefreshStatus(data.running ? data : null);
+          if (refreshing && !data.running) {
+            setRefreshing(false);
+            loadVideos();
+          }
+        }
+
+        // 2. Fordítás folyamat polling
+        const resTrans = await fetch('/api/translate-all/progress');
+        if (resTrans.ok) {
+          const data = await resTrans.json();
+          setTranslateProg(data.total > 0 ? data : null);
         }
       } catch { /* silent */ }
     };
-    translatePollRef.current = setInterval(poll, 1500);
-    poll();
-    return () => clearInterval(translatePollRef.current);
-  }, []);
+
+    const schedule = async () => {
+      await poll();
+      // Ha aktív folyamat van, 1.5s; ha nem, 8s
+      const activeNow = refreshing || (translateProg?.running);
+      timer = setTimeout(schedule, activeNow ? 1500 : 8000);
+    };
+
+    schedule();
+    return () => clearTimeout(timer);
+  }, [refreshing, translateProg?.running, loadVideos]);
 
   /** Frissítés gomb: POST /api/refresh */
   const handleRefresh = async () => {
@@ -236,8 +258,12 @@ function Home() {
   const filtered =
     filter === 'dax'
       ? videos.filter((v) => {
-          const fns = v.dax_functions ? JSON.parse(v.dax_functions) : [];
-          return fns.length > 0;
+          try {
+            const fns = v.dax_functions ? JSON.parse(v.dax_functions) : [];
+            return fns.length > 0;
+          } catch (e) {
+            return false;
+          }
         })
       : videos;
 
@@ -291,6 +317,28 @@ function Home() {
           </button>
         </div>
       </div>
+
+      {refreshStatus && (
+        <div className="translate-progress refresh-progress">
+          <div className="translate-progress__header">
+            <span className="translate-progress__label">
+              🔄 Videógyűjtés folyamatban...
+            </span>
+            <span className="translate-progress__count">
+              {refreshStatus.progress} / {refreshStatus.total} csatorna
+            </span>
+          </div>
+          <div className="translate-progress__bar-bg">
+            <div
+              className="translate-progress__bar-fill translate-progress__bar-fill--refresh"
+              style={{ width: `${Math.round((refreshStatus.progress / refreshStatus.total) * 100)}%` }}
+            />
+          </div>
+          <div className="translate-progress__current">
+            {refreshStatus.lastMessage || 'Csatornák átvizsgálása...'}
+          </div>
+        </div>
+      )}
 
       {translateProg && (
         <div className="translate-progress">

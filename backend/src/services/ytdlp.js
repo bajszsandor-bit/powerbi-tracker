@@ -143,9 +143,11 @@ function parseYtdlpOutput(rawOutput) {
  * Összegyűjti a Power BI videók metaadatait keresési kifejezések és csatornák alapján.
  * yt-dlp hívások között 2 másodperc delay van.
  *
+ * @param {{ onProgress?: (done: number, total: number) => void }} options
  * @returns {Promise<import('../db/videoRepository.js').VideoInput[]>} Az összes összegyűjtött videó (duplikátumok nélkül)
  */
-async function collectVideos() {
+async function collectVideos(options = {}) {
+  const { onProgress } = options;
   const all = [];
   const seenIds = new Set();
 
@@ -154,7 +156,9 @@ async function collectVideos() {
     ...CHANNEL_URLS.map((url) => ({ type: 'channel', url })),
   ];
 
-  for (const source of sources) {
+  for (let i = 0; i < sources.length; i++) {
+    const source = sources[i];
+    if (onProgress) onProgress(i, sources.length);
     try {
       let args;
       if (source.type === 'search') {
@@ -184,6 +188,7 @@ async function collectVideos() {
 
     await sleep(YTDLP_DELAY_MS);
   }
+  if (onProgress) onProgress(sources.length, sources.length);
 
   return all;
 }

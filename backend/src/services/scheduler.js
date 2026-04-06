@@ -12,22 +12,25 @@ import { appendFile, mkdir } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { checkYtdlpInstalled, collectVideos } from './ytdlp.js';
-import { upsertVideos, getAllVideos, getLastUpdated, updateTranslations, updateAiSummary, getVideoById } from '../db/videoRepository.js';
+import { upsertVideos, getAllVideos, getLastUpdated, updateTranslations, updateAiSummary, getVideoById, updateDaxFunctions } from '../db/videoRepository.js';
 import { translateVideo } from './translation.js';
 import { generateAiSummary } from './aiSummary.js';
+import { extractDaxFunctions } from './daxAnalyzer.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const LOG_PATH = join(__dirname, '../../../logs/refresh.log');
 const STALE_THRESHOLD_MS = 20 * 60 * 60 * 1000; // 20 óra
 
 /**
- * @type {{ running: boolean, lastRefresh: string|null, lastStatus: 'idle'|'running'|'ok'|'error'|'skipped', lastMessage: string }}
+ * @type {{ running: boolean, lastRefresh: string|null, lastStatus: 'idle'|'running'|'ok'|'error'|'skipped', lastMessage: string, progress: number, total: number }}
  */
 const state = {
   running: false,
   lastRefresh: null,
   lastStatus: 'idle',
   lastMessage: 'Még nem futott frissítés.',
+  progress: 0,
+  total: 0,
 };
 
 /**
@@ -71,7 +74,12 @@ async function runRefresh() {
     }
 
     await log('Frissítés megkezdve...');
-    const videos = await collectVideos();
+    const videos = await collectVideos({
+      onProgress: (done, total) => {
+        state.progress = done;
+        state.total = total;
+      }
+    });
     const inserted = upsertVideos(videos);
     const total = getAllVideos().length;
     await log(`Videók összegyűjtve – Új: ${inserted}, Összes: ${total}`);
@@ -116,6 +124,34 @@ async function runRefresh() {
       await log(`Auto-fordítás kész – ${translated}/${untranslated.length} videó lefordítva.`);
     } else {
       await log('Minden videó már le van fordítva.');
+    }
+
+    // Új videók elemzése (DAX + AI összefoglaló)
+    const newVideos = videos.filter(() => inserted > 0); // Egyszerűsített logika az új videókra
+    if (newVideos.length > 0) {
+      await log(`Elemzés indul – ${newVideos.length} új videó feldolgozása...`);
+      for (const video of newVideos) {
+        try {
+          // 1. DAX kinyerés
+          const saved = getVideoById(video.id);
+          const text = `${video.title || ''} ${video.description || ''} ${saved?.ai_summary_hu || ''} ${saved?.transcript_hu || ''}`;
+          updateDaxFunctions(video.id, extractDaxFunctions(text));
+
+          // 2. AI összefoglaló
+          if (saved && !saved.ai_summary_hu) {
+            const summary = await generateAiSummary({
+              title: video.title,
+              channel_title: video.channelTitle,
+              description: video.description,
+              description_hu: saved.description_hu,
+            });
+            if (summary) updateAiSummary(video.id, summary);
+          }
+          await log(`  ✓ Elemzés kész: ${video.title?.slice(0, 50)}`);
+        } catch (err) {
+          await log(`  ✗ Elemzési hiba (${video.id}): ${err.message}`);
+        }
+      }
     }
 
     state.lastRefresh = new Date().toISOString();

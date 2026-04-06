@@ -156,4 +156,39 @@
 
 ---
 
+### OUT-12 – Indítási és frissítési folyamat javítása
+**Leírás:** Aszinkron frissítési folyamat, folyamatjelzés a felületen és asztali indító ikonok.
+
+**Elfogadási kritériumok:**
+- [x] `/api/refresh` aszinkron módon fut, nem okoz timeout-ot
+- [x] Frontend folyamatjelzőn mutatja a gyűjtés haladását (csatornák alapján)
+- [x] Asztali `PowerBI_Tracker_START.bat` és `STOP.bat` létrehozva
+- [x] Új videók esetén automatikus DAX és AI elemzés lefut a háttérben
+
+---
+
+### OUT-15 – Chrome Bővítmény (Auto-Szinkron YouTube-ra)
+**Leírás:** Saját Chrome bővítmény készítése, amely beépül a YouTube felületébe, elküldi az aktuális videót a helyi (Power BI Tracker) backendnek letöltésre, feliratozásra és szinkronizálásra, majd lejátssza a magyar hangot a némított eredeti videó felett.
+
+**Elfogadási kritériumok:**
+- [ ] `extension/` mappa létrehozva
+- [ ] `manifest.json` (Manifest V3) elkészítve
+- [ ] Content script gombot injektál a YouTube lejátszó felületére ("Magyar Szinkron")
+- [ ] Bővítmény kommunikál a `localhost:3001` szerverünkkel CORS hiba nélkül
+- [ ] A YouTube videó némítása és a `/api/videos/:id/dubtrack` audió lejátszása megtörténik szinkronban a képpel
+- [ ] Minimális Popup UI a státusz (Készül/Kész) és a beállítások ellenőrzéséhez
+
+---
+
 > **Megjegyzés:** Új backlog elemet csak a fejlesztő adhat hozzá.
+
+---
+
+### OUT-16 – Fordítási és szinkronizációs logikai hibák javítása
+**Leírás:** Szavankénti borzalmas fordítások, elnémuló magyar hang és sorszámtévesztések javítása a translation.js felokosításával.
+
+**Elfogadási kritériumok:**
+- [x] `looksHungarian` okosabban engedi át az angol szakszavakkal tűzdelt, de ékezet nélküli magyar mondatokat
+- [x] Üres stringes array-kiegészítés eltávolítva (nincs szinkron némulás)
+- [x] Claude batch `CUE_TRANSLATE_PROMPT`-ot kap sorszámozáshoz a `TRANSLATE_PROMPT` helyett
+- [x] Batch hiba esetén "divide and conquer" alapon felezi a feladatot (chunk halving), így szinte sosincs csonka kontextus nélküli hívás

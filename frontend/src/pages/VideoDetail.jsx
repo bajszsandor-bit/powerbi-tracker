@@ -150,6 +150,7 @@ function VideoDetail() {
   const [dubProgress, setDubProgress] = useState({ done: 0, total: 0 });
   const [regenSubStatus, setRegenSubStatus] = useState('idle'); // idle | loading | done
   const [whisperStatus, setWhisperStatus] = useState('idle'); // idle | loading | done | error
+  const [ttsSettingsOpen, setTtsSettingsOpen] = useState(false); // TTS beállítások panel láthatósága
 
   // Fejezetek
   const [chapters, setChapters] = useState([]);
@@ -160,6 +161,8 @@ function VideoDetail() {
   const [chapterAnalyses, setChapterAnalyses] = useState({});  // index → { status, text }
   const [expandedAnalysis, setExpandedAnalysis] = useState(null);
   const [generatingChapters, setGeneratingChapters] = useState(false);
+  const [chaptersError, setChaptersError] = useState('');
+  const [dubError, setDubError] = useState('');
 
   // Ollama elemzés
   const [ollamaStatus, setOllamaStatus] = useState('idle'); // idle | loading | done | error
@@ -238,7 +241,6 @@ function VideoDetail() {
     try {
       if (playerRef.current?.mute) mute ? playerRef.current.mute() : playerRef.current.unMute();
     } catch {}
-    setYtMuted(mute);
   }
 
   // Queue törlés – seek vagy TTS kikapcsoláskor
@@ -266,7 +268,8 @@ function VideoDetail() {
   // Magyar szinkronsáv generálása – teljes WAV fájl a szerveren
   async function handleGenerateDubtrack() {
     const hunCues = cues.filter(c => isHungarianText(c.text));
-    if (!hunCues.length) { alert('Nincs magyar felirat ehhez a videóhoz'); return; }
+    if (!hunCues.length) { setDubError('Nincs magyar felirat – előbb fordítsd le a videót.'); return; }
+    setDubError('');
     setDubStatus('generating');
     dubStatusRef.current = 'generating';
     setDubProgress({ done: 0, total: 0 });
@@ -361,6 +364,7 @@ function VideoDetail() {
         setCurrentChapter(0);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chapters]);
 
   // Fejezetek auto-kinyerése a videó leírásából (ha nincs még elmentve)
@@ -415,12 +419,18 @@ function VideoDetail() {
         if (data) {
           setVideo(data);
           setStatus('ok');
-          if (data.transcriptCuesHu?.length) {
-            setCues(data.transcriptCuesHu);
-            setSubtitleStatus('ready');
+          if (data.transcriptCuesHu) {
+            try {
+              const cuesData = typeof data.transcriptCuesHu === 'string' ? JSON.parse(data.transcriptCuesHu) : data.transcriptCuesHu;
+              setCues(cuesData || []);
+              setSubtitleStatus('ready');
+            } catch { setSubtitleStatus('unavailable'); }
           }
-          if (data.chaptersJson?.length) {
-            setChapters(data.chaptersJson);
+          if (data.chaptersJson) {
+            try {
+              const ch = typeof data.chaptersJson === 'string' ? JSON.parse(data.chaptersJson) : data.chaptersJson;
+              setChapters(ch || []);
+            } catch { setChapters([]); }
           }
           // Dubtrack ellenőrzés – ha már generálva van, betöltjük
           fetch(`/api/videos/${id}/dubtrack`, { method: 'HEAD' })
@@ -530,7 +540,8 @@ function VideoDetail() {
       });
 
     return () => { clearTimeout(timeoutId); controller.abort(); };
-  }, [status, id]); // cues.length szándékosan nincs itt – egyszer fut le
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, id]); // cues szándékosan kihagyva – egyszer fut le
 
   // YouTube IFrame API – csak egyszer hozza létre a playert, amikor az első cue megérkezik
   const hasCues = cues.length > 0;
@@ -650,6 +661,7 @@ function VideoDetail() {
 
   async function handleGenerateChapters() {
     setGeneratingChapters(true);
+    setChaptersError('');
     try {
       const r = await fetch(`/api/videos/${id}/generate-chapters`, { method: 'POST' });
       const data = await r.json();
@@ -657,10 +669,10 @@ function VideoDetail() {
         setChapters(data.chapters);
         setChapterInput(data.chapters.map(c => `${c.timeStr} ${c.title}`).join('\n'));
       } else {
-        alert(data.error || 'Nem sikerült fejezeteket generálni');
+        setChaptersError(data.error || 'Nem sikerült fejezeteket generálni – ellenőrizd a GROQ_API_KEY-t a .env fájlban.');
       }
     } catch {
-      alert('Hiba a fejezetek generálásakor');
+      setChaptersError('Hálózati hiba a fejezetek generálásakor.');
     } finally {
       setGeneratingChapters(false);
     }
@@ -903,6 +915,11 @@ function VideoDetail() {
                 ✅ Szinkron kész
               </span>
             )}
+            {dubError && (
+              <span className="detail__tts-settings-btn" style={{cursor:'default',color:'#dc2626',maxWidth:'200px',whiteSpace:'normal',fontSize:'0.75rem'}}>
+                ⚠️ {dubError}
+              </span>
+            )}
 
             {/* ⚙️ Beállítások menü */}
             <button
@@ -1121,6 +1138,11 @@ function VideoDetail() {
           >
             {generatingChapters ? '⏳ Generálás...' : '✨ Fejezetek automatikus generálása'}
           </button>
+          {chaptersError && (
+            <p style={{ marginTop: '0.5rem', fontSize: '0.82rem', color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', padding: '0.4rem 0.75rem' }}>
+              ⚠️ {chaptersError}
+            </p>
+          )}
         </div>
       )}
 

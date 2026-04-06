@@ -1,6 +1,6 @@
 /**
  * @file Channels.jsx
- * @description Csatornák könyvtár – két fül (English top 30 / Magyar top 15)
+ * @description Csatornák könyvtár – három fül (English top 30 / Magyar top 15 / Claude)
  * kategória- és szintszűrőkkel.
  */
 
@@ -59,21 +59,35 @@ const HU_CHANNELS = [
   { rank: 15, name: 'Tableau Hungary User Group',    category: 'Vizualizáció', level: 'Haladó',     description: 'BI + adatvizualizáció magyar közösség',                            url: '#',                                                        badge: '👥' },
 ];
 
+const CLAUDE_CHANNELS = [
+  { rank: 1, name: 'Matt Wolfe',           category: 'AI Hírek',       level: 'Minden szint', description: 'AI hírek, eszközrecenziók (Claude is rendszeresen szerepel)',   url: 'https://www.youtube.com/@mreflow',       badge: '📰' },
+  { rank: 2, name: 'The AI Advantage',     category: 'AI Eszközök',    level: 'Közepes',      description: 'AI eszközök, Claude tippek, automatizálás',                    url: 'https://www.youtube.com/@aiadvantage',   badge: '🛠️' },
+  { rank: 3, name: 'Matthew Berman',       category: 'AI Hírek',       level: 'Haladó',       description: 'AI hírek, Claude Code tesztek, ügynökök',                      url: 'https://www.youtube.com/@matthew_berman',badge: '🤖' },
+  { rank: 4, name: 'Skill Leap AI',        category: 'Claude Oktatók', level: 'Kezdő',        description: 'Claude oktatók, kezdőknek, prompt tippek',                     url: 'https://www.youtube.com/@skillleapai',   badge: '🎓' },
+  { rank: 5, name: 'Wes Roth',             category: 'AI Hírek',       level: 'Haladó',       description: 'AI fejlesztések (Anthropic, OpenAI), elemzések',               url: 'https://www.youtube.com/@WesRoth',        badge: '📊' },
+  { rank: 6, name: 'Alex Finn',            category: 'AI Eszközök',    level: 'Közepes',      description: 'Claude + no-code alkalmazásépítés',                            url: 'https://www.youtube.com/@alexfinnx',     badge: '⚡' },
+  { rank: 7, name: 'AI Foundations',       category: 'Claude Oktatók', level: 'Közepes',      description: 'Claude projektek, vibe coding, automatizálás',                 url: 'https://www.youtube.com/@aifoundations', badge: '🏗️' },
+  { rank: 8, name: 'Anthropic (hivatalos)',category: 'Hivatalos',       level: 'Minden szint', description: 'Claude bemutatók, frissítések, demók',                         url: 'https://www.youtube.com/@anthropic-ai',  badge: '🔵' },
+];
+
 // ── Szín logika ───────────────────────────────────────────────────────────────
 
 const CATEGORY_CLASS = {
-  'Power BI':    'channel-card--powerbi',
-  'DAX':         'channel-card--dax',
-  'Excel':       'channel-card--excel',
-  'Excel + BI':  'channel-card--excel',
-  'Data':        'channel-card--data',
-  'Tanfolyam':   'channel-card--powerbi',
-  'Blog + Videó':'channel-card--data',
-  'Vizualizáció':'channel-card--dax',
-  'Közösség':    'channel-card--data',
-  'Esemény':     'channel-card--data',
-  'Hivatalos':   'channel-card--powerbi',
-  'Ipar':        'channel-card--data',
+  'Power BI':       'channel-card--powerbi',
+  'DAX':            'channel-card--dax',
+  'Excel':          'channel-card--excel',
+  'Excel + BI':     'channel-card--excel',
+  'Data':           'channel-card--data',
+  'Tanfolyam':      'channel-card--powerbi',
+  'Blog + Videó':   'channel-card--data',
+  'Vizualizáció':   'channel-card--dax',
+  'Közösség':       'channel-card--data',
+  'Esemény':        'channel-card--data',
+  'Hivatalos':      'channel-card--powerbi',
+  'Ipar':           'channel-card--data',
+  'AI Hírek':       'channel-card--data',
+  'AI Eszközök':    'channel-card--dax',
+  'Claude Oktatók': 'channel-card--powerbi',
 };
 
 const LEVEL_CLASS = {
@@ -87,10 +101,12 @@ const LEVEL_CLASS = {
 
 // ── Szűrő kategóriák ──────────────────────────────────────────────────────────
 
-const EN_CATEGORIES   = ['Összes', 'Power BI', 'DAX', 'Excel', 'Excel + BI', 'Data'];
-const EN_LEVELS       = ['Összes', 'Kezdő', 'Közepes', 'Haladó', 'Expert'];
-const HU_CATEGORIES   = ['Összes', 'Power BI', 'Tanfolyam', 'Excel', 'Közösség', 'Vizualizáció'];
-const HU_LEVELS       = ['Összes', 'Kezdő', 'Közepes', 'Haladó', 'Expert', 'Minden szint'];
+const EN_CATEGORIES     = ['Összes', 'Power BI', 'DAX', 'Excel', 'Excel + BI', 'Data'];
+const EN_LEVELS         = ['Összes', 'Kezdő', 'Közepes', 'Haladó', 'Expert'];
+const HU_CATEGORIES     = ['Összes', 'Power BI', 'Tanfolyam', 'Excel', 'Közösség', 'Vizualizáció'];
+const HU_LEVELS         = ['Összes', 'Kezdő', 'Közepes', 'Haladó', 'Expert', 'Minden szint'];
+const CLAUDE_CATEGORIES = ['Összes', 'AI Hírek', 'AI Eszközök', 'Claude Oktatók', 'Hivatalos'];
+const CLAUDE_LEVELS     = ['Összes', 'Kezdő', 'Közepes', 'Haladó', 'Minden szint'];
 
 // ── Komponensek ───────────────────────────────────────────────────────────────
 
@@ -212,7 +228,7 @@ function Channels() {
       <div className="channels__header">
         <h2 className="channels__title">Csatorna Könyvtár</h2>
         <p className="channels__subtitle">
-          A legjobb Power BI, DAX és Excel tanulási források – kurátori válogatás
+          A legjobb Power BI, DAX, Excel és Claude tanulási források – kurátori válogatás
         </p>
       </div>
 
@@ -229,19 +245,33 @@ function Channels() {
         >
           🇭🇺 Magyar források (top 15)
         </button>
+        <button
+          className={`channels__tab${activeTab === 'claude' ? ' channels__tab--active' : ''}`}
+          onClick={() => setActiveTab('claude')}
+        >
+          🤖 Claude csatornák (top 8)
+        </button>
       </div>
 
-      {activeTab === 'en' ? (
+      {activeTab === 'en' && (
         <ChannelTab
           channels={EN_CHANNELS}
           categories={EN_CATEGORIES}
           levels={EN_LEVELS}
         />
-      ) : (
+      )}
+      {activeTab === 'hu' && (
         <ChannelTab
           channels={HU_CHANNELS}
           categories={HU_CATEGORIES}
           levels={HU_LEVELS}
+        />
+      )}
+      {activeTab === 'claude' && (
+        <ChannelTab
+          channels={CLAUDE_CHANNELS}
+          categories={CLAUDE_CATEGORIES}
+          levels={CLAUDE_LEVELS}
         />
       )}
     </main>

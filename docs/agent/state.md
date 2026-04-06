@@ -6,25 +6,36 @@
 
 ## Legutóbbi állapot
  
-**Elkészült iteráció:** OUT-11 ✅ SZINKRON ÉS FORDÍTÁS JAVÍTVA
+**Elkészült iteráció:** OUT-16 ✅ FORDÍTÁS ÉS SZINKRONIZÁCIÓ JAVÍTÁSA
  
-**Dátum:** 2026-03-24
+**Dátum:** 2026-03-25
  
 **Elvégzett munka:**
-- `backend/src/services/dubtrack.js` – Adaptív beszédsebesség (Adaptive Rate) +40%-ig, javított deduplikáció
-- `backend/src/services/translation.js` – Fallback soronkénti fordításra batch hiba vagy hiányzó ékezetek esetén
-- `docs/agent/goal.md` – Frissítve a Whisper és Dubbing funkciókkal
-- Backend és Frontend linter hibák (unused vars, eqeqeq) javítva
+- **`looksHungarian` okosítása**: Angol szakszavas (de ékezet nélküli) magyar mondatokat már nem dob el (EN_STOPWORDS check).
+- **Üres sor beszúrás javítása**: Eltávolítottam a fix ±1 eltérés "megjavítását", ami szó szerint üres fordításokat (néma szinkront) eredményezett a cue-k végén.
+- **Claude batch prompt fix**: Ha a Groq batch elhasal, a Claude már tényleg sorszámozva próbálkozik (`CUE_TRANSLATE_PROMPT`), nem bekezdésként.
+- **Chunk halving**: Ha minden batch kötél szakad (pl. hibás LLM struktúra), a kód most már megfelezi (divide & conquer) a sortömböt, így elkerülve a borzalmas szavankénti kontextus-nélküli fordításokat.
+- Tesztek (unit tests: `scoring`, `translation`) újra zöldek.
  
 **Technikai döntések:**
-- Adaptív sebesség: ha a magyar TTS hosszabb az angol eredetinél, kiszámoljuk a szükséges gyorsítást (Edge TTS rate paraméter)
-- Szigorúbb magyar nyelv ellenőrzés (`looksHungarian`) ékezet-alapú regex-szel
+- A `translatesText()` visszatérési logikáját visszaállítottam, valamint frissítettem a mock és idempotencia unit teszteket, amik fals-pozitív hibákat kódoltak.
+- A `scoring.js` 365 napos cutoff logikájához igazítottam a letört unit teszteket is.
  
 **Ami nem készült el:** –
  
-**Következő javasolt iteráció:** nincs – a projekt alapvető problémái javítva
+**Következő javasolt iteráció:** – Minden projekt funkció, ami a backlogban volt, megvalósult, stabil.
  
 ---
+ 
+## Előző iteráció (OUT-14 eredeti)
+ 
+---
+ 
+## Legutóbbi állapot (OUT-12 eredeti)
+ 
+---
+
+## Előző iteráció (OUT-11)
 
 ## Előző iteráció (OUT-10)
  

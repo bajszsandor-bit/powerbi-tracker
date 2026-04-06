@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <title>Szinkron Beállítások</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; width: 320px; padding: 15px; background: #f8fafc; color: #1e293b; margin: 0; }
+        h3 { margin-top: 0; margin-bottom: 5px; color: #0f172a; font-size: 16px; }
+        p.subtitle { font-size: 12px; color: #64748b; margin-top: 0; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { font-size: 13px; font-weight: 600; display: block; margin-bottom: 5px; }
+        select, input[type="range"] { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+        hr { border: none; border-top: 1px solid #e2e8f0; margin: 20px 0; }
+        .help-text { font-size: 11px; color: #64748b; margin-top: 20px; text-align: center; }
+        .btn { width: 100%; padding: 10px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn:hover { background: #2563eb; }
+        .header-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+        .logo-box { background: #ef4444; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="header-logo">
+        <div class="logo-box">SZ</div>
+        <h3>Saját Szinkron Helyi</h3>
+    </div>
+    <p class="subtitle">Irányítsd a helyi TTS szinkront a böngészőből.</p>
+    
+    <div class="form-group">
+        <label for="voiceSelect">AI Hang</label>
+        <select id="voiceSelect">
+            <option value="noemi">Noémi (Női hang)</option>
+            <option value="tamas">Tamás (Férfi hang)</option>
+            <option value="szabolcs">Szabolcs (Mély férfi hang)</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="rateSelect">Beszédsebesség (ha lehetséges)</label>
+        <select id="rateSelect">
+            <option value="0%">Normál (0%)</option>
+            <option value="-5%">Kicsit lassabb (-5%)</option>
+            <option value="-10%" selected>Ideális magyarhoz (-10%)</option>
+            <option value="+5%">Gyorsabb (+5%)</option>
+        </select>
+    </div>
+    
+    <hr>
+    
+    <button id="saveBtn" class="btn">Beállítások Mentése</button>
+    
+    <div class="help-text">A szinkronizálást közvetlenül a YouTube videó alatti "Magyar Szinkron" gombbal indíthatod majd.</div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

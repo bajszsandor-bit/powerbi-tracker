@@ -125,9 +125,9 @@ describe('scoreVideo', () => {
 // ---------------------------------------------------------------------------
 
 describe('getTop10', () => {
-  test('30 napon túli videók kiszűrésre kerülnek', () => {
+  test('1 évnél régebbi videók kiszűrésre kerülnek', () => {
     const videos = [
-      { id: 'old', viewCount: 999999, likeCount: 999999, publishedAt: daysAgoDate(31) },
+      { id: 'old', viewCount: 999999, likeCount: 999999, publishedAt: daysAgoDate(400) },
       { id: 'new', viewCount: 100, likeCount: 100, publishedAt: daysAgoDate(0) },
     ];
     const result = getTop10(videos, NOW);
@@ -178,11 +178,11 @@ describe('getTop10', () => {
     expect(typeof result[0].freshnessScore).toBe('number');
   });
 
-  test('pontosan 10 napos videó (freshnessScore=0) kiszűrésre kerül', () => {
+  test('pontosan 10 napos videó bekerül de 0 freshness score-ral', () => {
     const videos = [
       { id: 'exactly10', viewCount: 100, likeCount: 50, publishedAt: daysAgoDate(10) },
     ];
-    expect(getTop10(videos, NOW)).toHaveLength(0);
+    expect(getTop10(videos, NOW)).toHaveLength(1);
   });
 
   test('9 napos videó (freshnessScore=10) megjelenik', () => {

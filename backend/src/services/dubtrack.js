@@ -335,16 +335,20 @@ export async function generateDubtrack(videoId, cues, options = {}) {
 
   // XTTS elérhetőség + hangminta letöltés
   let speakerWav = null;
-  if (clone) {
+  const useClone = process.env.USE_XTTS !== 'false' && clone;
+  
+  if (useClone) {
+    console.log('[DUBTRACK] XTTS szerver ellenőrzése...');
     if (await isXttsReady()) {
       try {
         speakerWav = await extractVoiceSample(videoId);
-        console.log(`[DUBTRACK] 🎤 Hangklónozás aktív: ${path.basename(speakerWav)}`);
+        console.log(`[DUBTRACK] 🎤 Tökéletes hang (klónozás) aktív: ${path.basename(speakerWav)}`);
       } catch (err) {
-        console.warn(`[DUBTRACK] Hangminta hiba, fallback msedge-tts: ${err.message}`);
+        console.warn(`[DUBTRACK] ⚠️ Hangminta hiba, fallback droid hang: ${err.message}`);
       }
     } else {
-      console.log('[DUBTRACK] XTTS nem elérhető – msedge-tts Neural hangot használ');
+      console.warn('[DUBTRACK] ⚠️ Chatterbox TTS server nem elérhető! (droid hang lesz)');
+      console.log(`[DUBTRACK] Tipp: Indítsd el a Szinkron szervert a START_PowerBI_Tracker.bat-tal!`);
     }
   }
 

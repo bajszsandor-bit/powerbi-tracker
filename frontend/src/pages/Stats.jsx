@@ -19,6 +19,7 @@ function StatCard({ icon, label, value, sub, color }) {
 
 function Stats() {
   const [archiveStats, setArchiveStats] = useState(null);
+  const [archiveError, setArchiveError] = useState(false);
   const [personalStats, setPersonalStats] = useState(null);
 
   useEffect(() => {
@@ -26,7 +27,7 @@ function Stats() {
     fetch('/api/stats')
       .then(r => r.json())
       .then(setArchiveStats)
-      .catch(() => {});
+      .catch(() => setArchiveError(true));
 
     // Személyes haladás localStorage-ból
     const done = [], learning = [], noted = [];
@@ -142,6 +143,8 @@ function Stats() {
               </div>
             )}
           </>
+        ) : archiveError ? (
+          <p style={{ color: '#dc2626', fontSize: '0.88rem' }}>⚠️ Nem sikerült betölteni a statisztikákat. Ellenőrizd, hogy fut-e a backend.</p>
         ) : (
           <div className="spinner" />
         )}

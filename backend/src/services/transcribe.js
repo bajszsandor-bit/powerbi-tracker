@@ -13,6 +13,9 @@ import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const execFileAsync = promisify(execFile);
 const YTDLP = process.env.YTDLP_PATH || 'yt-dlp';
@@ -20,6 +23,11 @@ const FFMPEG = process.env.FFMPEG_PATH ||
   'C:/Users/bajsz/AppData/Local/Programs/Python/Python312/Lib/site-packages/imageio_ffmpeg/binaries/ffmpeg-win-x86_64-v7.1.exe';
 const FLASK_URL = process.env.FLASK_WHISPER_URL || 'http://127.0.0.1:5000';
 const FLASK_APP = process.env.FLASK_APP_PATH || 'C:/Users/bajsz/Desktop/Szinkron/app.py';
+
+// Helyi Faster-Whisper (Python venv)
+// A backend/src/services könyvtárban vagyunk, a venv a backend/venv_whisper-ben van.
+const WHISPER_VENV_PYTHON = path.join(__dirname, '..', '..', 'venv_whisper', 'Scripts', 'python.exe');
+const TRANSCRIBE_SCRIPT = path.join(__dirname, '..', '..', 'scripts', 'transcribe_local.py');
 
 const MAX_SIZE = 24 * 1024 * 1024; // 24MB – Groq limit alatt tartva
 const CHUNK_SECS = 600;             // 10 perces részek
@@ -138,10 +146,21 @@ export async function transcribeLocalAudio(filePath, groqApiKey) {
 }
 
 /**
- * YouTube videó átírása Groq Whisper-large-v3-mal.
- * Automatikusan darabolja a nagy fájlokat.
+ * YouTube videó átírása. 
+ * Preferálja a helyi Faster-Whisper-t, ha a USE_LOCAL_WHISPER=true.
+ * Egyébként Groq-ot használ.
  */
 export async function transcribeAudio(videoId, groqApiKey) {
+  if (process.env.USE_LOCAL_WHISPER === 'true' || !groqApiKey) {
+    try {
+      console.log(`[WHISPER] Helyi transzkripció indítása: ${videoId}`);
+      return await transcribeWithLocalPython(videoId);
+    } catch (err) {
+      console.error('[WHISPER] Helyi hiba, fallback Groq-ra:', err.message);
+      if (!groqApiKey) throw err;
+    }
+  }
+
   const audioPath = await downloadAudio(videoId);
   const tmpDir = os.tmpdir();
 
@@ -163,6 +182,30 @@ export async function transcribeAudio(videoId, groqApiKey) {
     }
 
     return allCues;
+  } finally {
+    try { await fs.unlink(audioPath); } catch {}
+  }
+}
+
+/**
+ * YouTube videó hangjának átírása helyi Python szkripttel.
+ */
+export async function transcribeWithLocalPython(videoId) {
+  const audioPath = await downloadAudio(videoId);
+  try {
+    console.log(`[WHISPER] Python szkript indítása: ${audioPath}`);
+    const { stdout } = await execFileAsync(WHISPER_VENV_PYTHON, [
+      TRANSCRIBE_SCRIPT,
+      audioPath,
+      process.env.WHISPER_MODEL || 'small'
+    ], { 
+      maxBuffer: 50 * 1024 * 1024,
+      timeout: 600_000 // 10 perc
+    });
+    
+    const results = JSON.parse(stdout);
+    if (results.error) throw new Error(results.error);
+    return results;
   } finally {
     try { await fs.unlink(audioPath); } catch {}
   }

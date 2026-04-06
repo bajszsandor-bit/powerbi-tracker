@@ -49,8 +49,51 @@ function scoreVideo(video, now = new Date()) {
 }
 
 /**
+ * Szavak listája amelyek oktatási/elemzési tartalomra utalnak.
+ * Ha a cím ezek egyikét sem tartalmazza, a videó nem kerül be a Top 10-be.
+ */
+const RELEVANT_KEYWORDS = [
+  'power bi', 'powerbi', 'dax', 'power query', 'fabric', 'pbix',
+  'excel', 'dashboard', 'report', 'data', 'analytics', 'analysis',
+  'pivot', 'chart', 'visualization', 'measure', 'calculation',
+  'vlookup', 'xlookup', 'tableau', 'sql', 'bi ', ' bi',
+  'tutorial', 'training', 'learn', 'course', 'tanulás', 'oktatás',
+  'elemzés', 'adat', 'kimutatás', 'riport', 'műszerfal',
+];
+
+/**
+ * Szavak listája amelyek nem oktatási tartalomra utalnak (ASMR, mém, vicc stb.).
+ * Ha a cím bármelyiket tartalmazza, a videó ki lesz szűrve.
+ */
+const NEGATIVE_KEYWORDS = [
+  'asmr', 'sleep', 'relaxing', 'relaxation', 'no talking', 'lofi', 'lo-fi',
+  'pizza', 'kit-kat', 'kitkat', 'meme', 'joke', 'funny', 'prank',
+  'mukbang', 'vlog', 'reaction', 'unboxing',
+];
+
+/**
+ * Megvizsgálja, hogy egy videó tartalmilag releváns-e (nem ASMR, mém, reklám stb.).
+ *
+ * @param {object} video - Videó objektum
+ * @returns {boolean}
+ */
+function isRelevantVideo(video) {
+  const titleLower = (video.title || '').toLowerCase();
+  const descLower = (video.description || '').slice(0, 500).toLowerCase();
+
+  // Ha negatív kulcsszó van a címben → azonnal irreleváns
+  if (NEGATIVE_KEYWORDS.some((kw) => titleLower.includes(kw))) return false;
+
+  // Ha DAX függvény van benne → azonnal releváns
+  if ((Number(video.dax_mentions) || Number(video.daxMentions) || 0) > 0) return true;
+
+  // Cím alapján szűrés
+  return RELEVANT_KEYWORDS.some((kw) => titleLower.includes(kw) || descLower.includes(kw));
+}
+
+/**
  * Szűri és rendezi a videókat pontszám alapján, visszaadja a Top 10-et.
- * Dátum nélküli videók is szerepelnek (freshnessScore = 0), de pontszám alapján hátrébb kerülnek.
+ * Csak oktatási/elemzési tartalmak kerülnek be – ASMR, mém, reklám videók kizárva.
  *
  * @param {object[]} videos - Videók tömbje az adatbázisból
  * @param {Date} [now] - Opcionális referencia dátum (teszteléshez)
@@ -63,18 +106,22 @@ function getTop10(videos, now = new Date()) {
     score: scoreVideo({ ...video, publishedAt: video.publishedAt || video.published_at }, now),
   }));
 
-  // Csak az elmúlt 365 napon belüli videók
+  // 1. Relevanciaszűrés – kizárja az ASMR, mém, reklám videókat
+  const relevant = scored.filter(isRelevantVideo);
+  const pool0 = relevant.length >= 5 ? relevant : scored;
+
+  // 2. Csak az elmúlt 365 napon belüli videók
   const cutoff = new Date(now);
   cutoff.setFullYear(cutoff.getFullYear() - 1);
 
-  const fresh = scored.filter((v) => {
+  const fresh = pool0.filter((v) => {
     const date = v.publishedAt || v.published_at;
     if (!date) return false;
     return new Date(date) >= cutoff;
   });
 
   // Ha van elég friss → csak azok; egyébként legfrissebb elérhető
-  const pool = fresh.length >= 5 ? fresh : scored
+  const pool = fresh.length >= 5 ? fresh : pool0
     .filter((v) => v.publishedAt || v.published_at)
     .sort((a, b) => {
       const da = new Date(a.publishedAt || a.published_at);
