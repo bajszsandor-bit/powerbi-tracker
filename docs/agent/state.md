@@ -5,29 +5,41 @@
 ---
 
 ## Legutóbbi állapot
-
-**Elkészült iteráció:** OUT-10 ✅ PROJEKT KÉSZ
-
-**Dátum:** 2026-03-20
-
+ 
+**Elkészült iteráció:** OUT-16 ✅ FORDÍTÁS ÉS SZINKRONIZÁCIÓ JAVÍTÁSA
+ 
+**Dátum:** 2026-03-25
+ 
 **Elvégzett munka:**
-- `frontend/src/pages/Home.jsx` – no-ytdlp állapot → lépéses telepítési útmutató (winget, manuális, macOS, Linux)
-- `frontend/src/index.css` – .install-guide stílusok
-- `README.md` – node:sqlite javítás, /api/status + /api/check-ytdlp dokumentálva
-- Teljes teszt suite: 75/75 unit + 10/10 e2e zöld
-
+- **`looksHungarian` okosítása**: Angol szakszavas (de ékezet nélküli) magyar mondatokat már nem dob el (EN_STOPWORDS check).
+- **Üres sor beszúrás javítása**: Eltávolítottam a fix ±1 eltérés "megjavítását", ami szó szerint üres fordításokat (néma szinkront) eredményezett a cue-k végén.
+- **Claude batch prompt fix**: Ha a Groq batch elhasal, a Claude már tényleg sorszámozva próbálkozik (`CUE_TRANSLATE_PROMPT`), nem bekezdésként.
+- **Chunk halving**: Ha minden batch kötél szakad (pl. hibás LLM struktúra), a kód most már megfelezi (divide & conquer) a sortömböt, így elkerülve a borzalmas szavankénti kontextus-nélküli fordításokat.
+- Tesztek (unit tests: `scoring`, `translation`) újra zöldek.
+ 
 **Technikai döntések:**
-- install-guide saját CSS osztályokkal, nem a home__state-re alapozva
-
+- A `translatesText()` visszatérési logikáját visszaállítottam, valamint frissítettem a mock és idempotencia unit teszteket, amik fals-pozitív hibákat kódoltak.
+- A `scoring.js` 365 napos cutoff logikájához igazítottam a letört unit teszteket is.
+ 
 **Ami nem készült el:** –
-
-**Következő javasolt iteráció:** nincs – a projekt minden tervezett iterációja elkészült (OUT-01 – OUT-10)
-
+ 
+**Következő javasolt iteráció:** – Minden projekt funkció, ami a backlogban volt, megvalósult, stabil.
+ 
+---
+ 
+## Előző iteráció (OUT-14 eredeti)
+ 
+---
+ 
+## Legutóbbi állapot (OUT-12 eredeti)
+ 
 ---
 
-## Előző iteráció (OUT-09)
+## Előző iteráció (OUT-11)
 
-**Elkészült iteráció:** OUT-09
+## Előző iteráció (OUT-10)
+ 
+**Elkészült iteráció:** OUT-10
 
 **Dátum:** 2026-03-20
 

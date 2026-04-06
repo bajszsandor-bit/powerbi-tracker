@@ -13,18 +13,27 @@ const execFileAsync = promisify(execFile);
 const YTDLP_TIMEOUT_MS = 60_000;
 const YTDLP_DELAY_MS = 2_000;
 
-const SEARCH_QUERIES = [
-  'ytsearch20:Power BI DAX tutorial',
-  'ytsearch20:Power BI tips tricks',
-  'ytsearch20:Power BI beginner 2024',
-  'ytsearch20:Power BI measures calculated columns',
-];
+const SEARCH_QUERIES = [];
 
+// Csatornák az Excel fájlból (Excel csatornák + Power BI csatornák)
 const CHANNEL_URLS = [
-  'https://www.youtube.com/@GuyInACube/videos',
-  'https://www.youtube.com/@SQLBI/videos',
-  'https://www.youtube.com/@PragmaticWorks/videos',
+  // Power BI csatornák
+  'https://www.youtube.com/@HowtoPowerBI/videos',
   'https://www.youtube.com/@MicrosoftPowerBI/videos',
+  'https://www.youtube.com/@PowerBITips/videos',
+  'https://www.youtube.com/@dfwpowerbiusergroup1374/videos',
+  'https://www.youtube.com/@nextlevelpowerbireports/videos',
+  // Excel csatornák
+  'https://www.youtube.com/@datakepzes/videos',
+  'https://www.youtube.com/@HowToExcelBlog/videos',
+  'https://www.youtube.com/@ExcelVisual/videos',
+  'https://www.youtube.com/@MsExcels/videos',
+  'https://www.youtube.com/@theexcelhub/videos',
+  'https://www.youtube.com/@MyExcelOnline/videos',
+  'https://www.youtube.com/@MrXL/videos',
+  'https://www.youtube.com/@excelcapa5191/videos',
+  'https://www.youtube.com/@ExcelTitok/videos',
+  'https://www.youtube.com/@Excelneked/videos',
 ];
 
 /**
@@ -57,6 +66,7 @@ async function checkYtdlpInstalled() {
   try {
     const { stdout } = await execFileAsync(getYtdlpPath(), ['--version'], {
       timeout: 10_000,
+      windowsHide: true,
     });
     return {
       installed: true,
@@ -80,11 +90,18 @@ async function checkYtdlpInstalled() {
  * @returns {Promise<string>} A parancs stdout kimenete
  */
 async function runYtdlp(args) {
-  const { stdout } = await execFileAsync(getYtdlpPath(), args, {
-    timeout: YTDLP_TIMEOUT_MS,
-    maxBuffer: 50 * 1024 * 1024,
-  });
-  return stdout;
+  try {
+    const { stdout } = await execFileAsync(getYtdlpPath(), args, {
+      timeout: YTDLP_TIMEOUT_MS,
+      maxBuffer: 50 * 1024 * 1024,
+      windowsHide: true,
+    });
+    return stdout;
+  } catch (err) {
+    // yt-dlp nem-nulla kilépési kód esetén is adhat valid JSON-t (pl. tagok-only videók a playlistben)
+    if (err.stdout && err.stdout.trim()) return err.stdout;
+    throw err;
+  }
 }
 
 /**
@@ -126,9 +143,11 @@ function parseYtdlpOutput(rawOutput) {
  * Összegyűjti a Power BI videók metaadatait keresési kifejezések és csatornák alapján.
  * yt-dlp hívások között 2 másodperc delay van.
  *
+ * @param {{ onProgress?: (done: number, total: number) => void }} options
  * @returns {Promise<import('../db/videoRepository.js').VideoInput[]>} Az összes összegyűjtött videó (duplikátumok nélkül)
  */
-async function collectVideos() {
+async function collectVideos(options = {}) {
+  const { onProgress } = options;
   const all = [];
   const seenIds = new Set();
 
@@ -137,13 +156,15 @@ async function collectVideos() {
     ...CHANNEL_URLS.map((url) => ({ type: 'channel', url })),
   ];
 
-  for (const source of sources) {
+  for (let i = 0; i < sources.length; i++) {
+    const source = sources[i];
+    if (onProgress) onProgress(i, sources.length);
     try {
       let args;
       if (source.type === 'search') {
-        args = [source.query, '--dump-json', '--no-download', '--flat-playlist'];
+        args = [source.query, '--dump-json', '--no-download', '--playlist-end', '5'];
       } else {
-        args = [source.url, '--dump-json', '--no-download', '--playlist-end', '10'];
+        args = [source.url, '--dump-json', '--no-download', '--playlist-end', '5'];
       }
 
       const raw = await runYtdlp(args);
@@ -167,8 +188,38 @@ async function collectVideos() {
 
     await sleep(YTDLP_DELAY_MS);
   }
+  if (onProgress) onProgress(sources.length, sources.length);
 
   return all;
 }
 
-export { checkYtdlpInstalled, collectVideos, parseYtdlpOutput, getYtdlpPath };
+/**
+ * Egyetlen YouTube videó metaadatait kéri le egy URL alapján.
+ *
+ * @param {string} url - YouTube videó URL
+ * @returns {Promise<import('../db/videoRepository.js').VideoInput | null>} Videó objektum vagy null
+ */
+async function fetchSingleVideo(url) {
+  const BASE_ARGS = [url, '--dump-json', '--no-download', '--no-playlist'];
+
+  // 1. Próba: Android API kliens – kevésbé rate-limitelt mint a web
+  try {
+    const raw = await runYtdlp([...BASE_ARGS, '--extractor-args', 'youtube:player_client=android']);
+    const videos = parseYtdlpOutput(raw);
+    if (videos.length > 0) return videos[0];
+  } catch { /* fallthrough */ }
+
+  // 2. Próba: Edge cookie – bot bypass (Edge ne legyen nyitva közben)
+  try {
+    const raw = await runYtdlp([...BASE_ARGS, '--cookies-from-browser', 'edge']);
+    const videos = parseYtdlpOutput(raw);
+    if (videos.length > 0) return videos[0];
+  } catch { /* fallthrough */ }
+
+  // 3. Próba: alap, cookie nélkül
+  const raw = await runYtdlp(BASE_ARGS);
+  const videos = parseYtdlpOutput(raw);
+  return videos[0] || null;
+}
+
+export { checkYtdlpInstalled, collectVideos, parseYtdlpOutput, getYtdlpPath, fetchSingleVideo };

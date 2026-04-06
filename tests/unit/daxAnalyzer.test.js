@@ -20,8 +20,8 @@ describe('extractDaxFunctions', () => {
     expect(result).toContain('SUM');
   });
 
-  test('kis- és nagybetű keveredése – normalizálja nagybetűsre', () => {
-    const result = extractDaxFunctions('calculate and sumx are powerful DAX functions.');
+  test('kis- és nagybetű keveredése – normalizálja nagybetűsre (ha zárójeles hívás)', () => {
+    const result = extractDaxFunctions('we use calculate() and sumx() functions.');
     expect(result).toContain('CALCULATE');
     expect(result).toContain('SUMX');
   });

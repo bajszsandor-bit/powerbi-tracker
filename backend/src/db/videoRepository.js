@@ -30,14 +30,15 @@ function upsertVideos(videos) {
   const db = getDatabase();
 
   const insert = db.prepare(`
-    INSERT OR IGNORE INTO videos (
+    INSERT OR REPLACE INTO videos (
       id, title, description, channel_title, published_at,
       view_count, like_count, thumbnail_url, video_url,
       created_at, updated_at
     ) VALUES (
       :id, :title, :description, :channelTitle, :publishedAt,
       :viewCount, :likeCount, :thumbnailUrl, :videoUrl,
-      datetime('now'), datetime('now')
+      COALESCE((SELECT created_at FROM videos WHERE id = :id), datetime('now')),
+      datetime('now')
     )
   `);
 
@@ -165,4 +166,93 @@ function getLastUpdated() {
   return row?.last || null;
 }
 
-export { upsertVideos, getAllVideos, getVideoCount, updateTranscriptStatus, updateTranslations, updateDaxFunctions, getVideoById, getLastUpdated };
+/**
+ * Elmenti egy videó AI-generált magyar összefoglalóját.
+ *
+ * @param {string} videoId
+ * @param {string} summary
+ */
+function updateAiSummary(videoId, summary) {
+  const db = getDatabase();
+  db.prepare(
+    `UPDATE videos SET ai_summary_hu = :summary, updated_at = datetime('now') WHERE id = :id`
+  ).run({ summary, id: videoId });
+}
+
+/**
+ * Elmenti egy videó szinkronizált magyar felirat cue-jait.
+ *
+ * @param {string} videoId
+ * @param {{ start: number, end: number, text: string }[]} cues
+ */
+function updateTranscriptCues(videoId, cues) {
+  const db = getDatabase();
+  db.prepare(
+    `UPDATE videos SET transcript_cues_hu = :cues, updated_at = datetime('now') WHERE id = :id`
+  ).run({ cues: JSON.stringify(cues), id: videoId });
+}
+
+/**
+ * Elmenti egy videó fejezeteit JSON formátumban.
+ *
+ * @param {string} videoId - YouTube videó azonosító
+ * @param {{ time: number, timeStr: string, title: string }[]} chapters
+ */
+function updateChapters(videoId, chapters) {
+  const db = getDatabase();
+  db.prepare(`UPDATE videos SET chapters_json = :c, updated_at = datetime('now') WHERE id = :id`)
+    .run({ c: JSON.stringify(chapters), id: videoId });
+}
+
+/**
+ * Megjelöl egy videót manuálisan importáltként.
+ *
+ * @param {string} videoId - YouTube videó azonosító
+ */
+function markAsImported(videoId) {
+  const db = getDatabase();
+  db.prepare(
+    `UPDATE videos SET is_imported = 1, updated_at = datetime('now') WHERE id = :id`
+  ).run({ id: videoId });
+}
+
+/**
+ * Visszaadja az összes manuálisan importált videót.
+ *
+ * @returns {object[]} Importált videók tömbje (legújabb elöl)
+ */
+function getImportedVideos() {
+  const db = getDatabase();
+  return db.prepare(
+    'SELECT * FROM videos WHERE is_imported = 1 ORDER BY created_at DESC'
+  ).all();
+}
+
+/**
+ * Visszaadja a kapcsolódó videókat DAX függvény átfedés alapján.
+ * @param {string} videoId
+ * @param {number} limit
+ * @returns {object[]}
+ */
+function getRelatedVideos(videoId, limit = 4) {
+  const db = getDatabase();
+  const src = db.prepare('SELECT dax_functions FROM videos WHERE id = :id').get({ id: videoId });
+  if (!src?.dax_functions) return [];
+  const srcFns = JSON.parse(src.dax_functions);
+  if (!srcFns.length) return [];
+
+  const others = db.prepare(
+    "SELECT id, title, title_hu, thumbnail_url, channel_title, dax_functions FROM videos WHERE id != :id AND dax_functions IS NOT NULL AND dax_functions != '[]'"
+  ).all({ id: videoId });
+
+  const scored = others.map(v => {
+    const fns = JSON.parse(v.dax_functions || '[]');
+    const overlap = fns.filter(f => srcFns.includes(f)).length;
+    return { ...v, overlap };
+  }).filter(v => v.overlap > 0);
+
+  scored.sort((a, b) => b.overlap - a.overlap);
+  return scored.slice(0, limit);
+}
+
+export { upsertVideos, getAllVideos, getVideoCount, updateTranscriptStatus, updateTranslations, updateDaxFunctions, getVideoById, getLastUpdated, updateAiSummary, markAsImported, getImportedVideos, updateTranscriptCues, updateChapters, getRelatedVideos };

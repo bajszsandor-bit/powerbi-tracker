@@ -20,6 +20,7 @@ const { translateText, translateVideo } = await import(
 
 beforeEach(() => {
   mockTranslate.mockReset();
+  global.fetch = jest.fn(() => Promise.reject(new Error('Fetch disabled in unit test')));
 });
 
 // ---------------------------------------------------------------------------
@@ -33,16 +34,16 @@ describe('translateText', () => {
     expect(result).toBe('Helló világ');
   });
 
-  test('hálózati hiba esetén az eredeti szöveget adja vissza (fallback)', async () => {
+  test('hálózati hiba esetén null-t ad vissza (fallback feljebb történik)', async () => {
     mockTranslate.mockRejectedValue(new Error('Network error'));
     const result = await translateText('Hello world');
-    expect(result).toBe('Hello world');
+    expect(result).toBeNull();
   });
 
-  test('timeout hiba esetén az eredeti szöveget adja vissza (fallback)', async () => {
+  test('timeout hiba esetén null-t ad vissza', async () => {
     mockTranslate.mockRejectedValue(new Error('Request timeout'));
     const result = await translateText('Power BI tutorial');
-    expect(result).toBe('Power BI tutorial');
+    expect(result).toBeNull();
   });
 
   test('null szöveg esetén null-t ad vissza', async () => {
@@ -63,10 +64,10 @@ describe('translateText', () => {
     expect(mockTranslate).not.toHaveBeenCalled();
   });
 
-  test('ha a fordítás üres szöveget ad vissza, az eredeti szöveget tartja meg', async () => {
+  test('ha a fordítás üres szöveget ad vissza, null-t ad vissza', async () => {
     mockTranslate.mockResolvedValue({ text: '' });
     const result = await translateText('Hello');
-    expect(result).toBe('Hello');
+    expect(result).toBeNull();
   });
 });
 
@@ -119,7 +120,7 @@ describe('translateVideo – idempotencia', () => {
     };
     const result = await translateVideo(video);
     expect(result.titleHu).toBe('Original title');
-    expect(result.descriptionHu).toBe('Original description');
+    expect(result.descriptionHu).toBeNull();
   });
 
   test('ha transcript nincs, transcriptHu null marad', async () => {
